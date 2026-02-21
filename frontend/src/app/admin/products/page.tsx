@@ -5,9 +5,9 @@ import { useRouter } from 'next/navigation';
 import Link from 'next/link';
 import { useQuery, useMutation, useQueryClient } from '@tanstack/react-query';
 import { 
-  LayoutDashboard, Package, Tag, Key, BarChart3, Settings, LogOut, Menu, X, Loader2, Plus, Search, Edit, Trash2, FileText
+  LayoutDashboard, Package, Tag, Key, BarChart3, Settings, LogOut, Menu, X, Loader2, Plus, Search, Edit, Trash2, FileText, Image
 } from 'lucide-react';
-import { getProducts, getCategories, createProduct, deleteProduct, generateCodes, logout } from '@/lib/api';
+import { getProducts, getCategories, getInstructions, createProduct, updateProduct, deleteProduct, generateCodes, uploadProductImage, logout } from '@/lib/api';
 import clsx from 'clsx';
 
 const navigation = [
@@ -26,6 +26,9 @@ export default function ProductsPage() {
   const [currentPath, setCurrentPath] = useState('/admin/products');
   const [search, setSearch] = useState('');
   const [showModal, setShowModal] = useState(false);
+  const [editingProduct, setEditingProduct] = useState<any>(null);
+  const [uploadingImage, setUploadingImage] = useState(false);
+  const [selectedImage, setSelectedImage] = useState<File | null>(null);
 
   useEffect(() => {
     const token = localStorage.getItem('accessToken');
@@ -35,29 +38,64 @@ export default function ProductsPage() {
   useEffect(() => { setCurrentPath(window.location.pathname); }, []);
 
   const { data: productsData, isLoading } = useQuery({ queryKey: ['products', search], queryFn: () => getProducts({ search }) });
-  const { data: categoriesData } = useQuery({ queryKey: ['categories'], queryFn: getCategories });
+  const { data: instructionsData } = useQuery({ queryKey: ['instructions'], queryFn: getInstructions });
 
   const createMutation = useMutation({ mutationFn: createProduct, onSuccess: () => { queryClient.invalidateQueries({ queryKey: ['products'] }); setShowModal(false); } });
+  const updateMutation = useMutation({ mutationFn: ({ id, data }: { id: string; data: any }) => updateProduct(id, data), onSuccess: () => { queryClient.invalidateQueries({ queryKey: ['products'] }); setShowModal(false); setEditingProduct(null); } });
   const generateCodesMutation = useMutation({ mutationFn: generateCodes, onSuccess: () => { queryClient.invalidateQueries({ queryKey: ['products'] }); queryClient.invalidateQueries({ queryKey: ['codes'] }); setShowModal(false); } });
-  const deleteMutation = useMutation({ mutationFn: deleteProduct, onSuccess: () => queryClient.invalidateQueries({ queryKey: ['products'] }) });
+  const deleteMutation = useMutation({
+    mutationFn: deleteProduct,
+    onSuccess: () => {
+      queryClient.invalidateQueries({ queryKey: ['products'] });
+    },
+    onError: (error: any) => {
+      alert('Ошибка удаления: ' + (error.response?.data?.error || error.message));
+    }
+  });
+
+  const uploadImageMutation = useMutation({
+    mutationFn: ({ productId, file }: { productId: string; file: File }) => uploadProductImage(productId, file),
+    onSuccess: () => {
+      queryClient.invalidateQueries({ queryKey: ['products'] });
+    },
+    onError: (error: any) => {
+      alert('Ошибка загрузки: ' + (error.response?.data?.error || error.message));
+    }
+  });
 
   const handleLogout = async () => { await logout(); router.push('/admin/login'); };
+
+  const handleEditProduct = (product: any) => {
+    setEditingProduct(product);
+    setShowModal(true);
+  };
 
   const handleCreateProduct = async (e: React.FormEvent<HTMLFormElement>) => {
     e.preventDefault();
     const formData = new FormData(e.currentTarget);
-    const productId = formData.get('productId') as string;
+    const productId = editingProduct?.id || formData.get('productId') as string;
     const generateCodesChecked = formData.get('generateCodes') === 'on';
     
     const productData = {
       name: formData.get('name') as string,
       slug: formData.get('slug') as string || undefined,
       categoryId: formData.get('categoryId') as string || undefined,
+      instructionTemplateId: formData.get('instructionTemplateId') as string || undefined,
       description: formData.get('description') as string || undefined,
       shortDescription: formData.get('shortDescription') as string || undefined,
       price: Number(formData.get('price')) || 0,
       status: (formData.get('status') as string) || 'active',
     };
+    
+    // Если это редактирование
+    if (editingProduct?.id) {
+      updateMutation.mutate({ id: editingProduct.id, data: productData });
+      // Если выбрано новое изображение, загружаем его
+      if (selectedImage) {
+        uploadImageMutation.mutate({ productId: editingProduct.id, file: selectedImage });
+      }
+      return;
+    }
     
     // Если это редактирование и выбраны коды для генерации
     if (productId && generateCodesChecked) {
@@ -117,7 +155,7 @@ export default function ProductsPage() {
         <main className="p-6 lg:p-8">
           <div className="flex flex-col sm:flex-row sm:items-center sm:justify-between gap-4 mb-8">
             <div><h1 className="text-3xl font-bold text-white">Товары</h1><p className="mt-1 text-gray-400">Управление товарами</p></div>
-            <button onClick={() => setShowModal(true)} className="inline-flex items-center gap-2 px-4 py-2 bg-indigo-600 text-white rounded-xl hover:bg-indigo-700"><Plus className="w-5 h-5" />Добавить товар</button>
+            <button onClick={() => { setEditingProduct(null); setShowModal(true); setSelectedImage(null); }} className="inline-flex items-center gap-2 px-4 py-2 bg-indigo-600 text-white rounded-xl hover:bg-indigo-700"><Plus className="w-5 h-5" />Добавить товар</button>
           </div>
 
           <div className="relative mb-6">
@@ -129,9 +167,9 @@ export default function ProductsPage() {
             {isLoading ? <div className="flex items-center justify-center h-64"><Loader2 className="w-8 h-8 animate-spin text-indigo-600" /></div> : (
               <div className="overflow-x-auto">
                 <table className="w-full">
-                  <thead className="bg-gray-700/50"><tr><th className="px-6 py-4 text-left text-xs font-medium text-gray-400 uppercase">Название</th><th className="px-6 py-4 text-left text-xs font-medium text-gray-400 uppercase">Категория</th><th className="px-6 py-4 text-right text-xs font-medium text-gray-400 uppercase">Цена</th><th className="px-6 py-4 text-center text-xs font-medium text-gray-400 uppercase">Статус</th><th className="px-6 py-4 text-center text-xs font-medium text-gray-400 uppercase">Действия</th></tr></thead>
+                  <thead className="bg-gray-700/50"><tr><th className="px-6 py-4 text-left text-xs font-medium text-gray-400 uppercase">Фото</th><th className="px-6 py-4 text-left text-xs font-medium text-gray-400 uppercase">Название</th><th className="px-6 py-4 text-left text-xs font-medium text-gray-400 uppercase">Инструкция</th><th className="px-6 py-4 text-right text-xs font-medium text-gray-400 uppercase">Цена</th><th className="px-6 py-4 text-center text-xs font-medium text-gray-400 uppercase">Статус</th><th className="px-6 py-4 text-center text-xs font-medium text-gray-400 uppercase">Действия</th></tr></thead>
                   <tbody className="divide-y divide-gray-700">
-                    {productsData?.data?.products?.length > 0 ? productsData.data.products.map((product: any) => (<tr key={product.id} className="hover:bg-gray-700/30"><td className="px-6 py-4"><div className="font-medium text-white">{product.name}</div><div className="text-sm text-gray-500">{product.slug}</div></td><td className="px-6 py-4 text-gray-400">{product.category?.name || '—'}</td><td className="px-6 py-4 text-right font-medium text-white">{product.price} ₽</td><td className="px-6 py-4 text-center"><span className={clsx('px-2 py-1 rounded-full text-xs', product.status === 'active' ? 'bg-green-900/50 text-green-300' : 'bg-gray-700 text-gray-400')}>{product.status === 'active' ? 'Активен' : 'Скрыт'}</span></td><td className="px-6 py-4 text-center"><div className="flex items-center justify-center gap-2"><button className="p-2 text-blue-600 hover:bg-blue-50 rounded-lg"><Edit className="w-4 h-4" /></button><button onClick={() => deleteMutation.mutate(product.id)} className="p-2 text-red-600 hover:bg-red-50 rounded-lg"><Trash2 className="w-4 h-4" /></button></div></td></tr>)) : (<tr><td colSpan={5} className="px-6 py-8 text-center text-gray-500">Товары не найдены</td></tr>)}
+                    {productsData?.data?.products?.length > 0 ? productsData.data.products.map((product: any) => (<tr key={product.id} className="hover:bg-gray-700/30"><td className="px-6 py-4">{product.imageUrl ? <img src={product.imageUrl} alt={product.name} className="w-16 h-16 object-cover rounded-lg" /> : <div className="w-16 h-16 bg-gray-700 rounded-lg flex items-center justify-center"><Image className="w-6 h-6 text-gray-500" /></div>}</td><td className="px-6 py-4"><div className="font-medium text-white">{product.name}</div><div className="text-sm text-gray-500">{product.slug}</div></td><td className="px-6 py-4 text-gray-400">{product.instructionTemplate?.name || '—'}</td><td className="px-6 py-4 text-right font-medium text-white">{product.price} ₽</td><td className="px-6 py-4 text-center"><span className={clsx('px-2 py-1 rounded-full text-xs', product.status === 'active' ? 'bg-green-900/50 text-green-300' : 'bg-gray-700 text-gray-400')}>{product.status === 'active' ? 'Активен' : 'Скрыт'}</span></td><td className="px-6 py-4 text-center"><div className="flex items-center justify-center gap-2"><button onClick={() => handleEditProduct(product)} className="p-2 text-blue-600 hover:bg-blue-50 rounded-lg"><Edit className="w-4 h-4" /></button><button onClick={() => deleteMutation.mutate(product.id)} className="p-2 text-red-600 hover:bg-red-50 rounded-lg"><Trash2 className="w-4 h-4" /></button></div></td></tr>)) : (<tr><td colSpan={6} className="px-6 py-8 text-center text-gray-500">Товары не найдены</td></tr>)}
                   </tbody>
                 </table>
               </div>
@@ -145,18 +183,37 @@ export default function ProductsPage() {
         <div className="fixed inset-0 z-50 flex items-center justify-center p-4 bg-black/70 backdrop-blur-sm">
           <div className="bg-gray-900 rounded-2xl w-full max-w-lg max-h-[90vh] overflow-y-auto border border-gray-700 shadow-2xl">
             <div className="flex items-center justify-between p-6 border-b border-gray-700">
-              <h2 className="text-xl font-semibold text-white">Добавить товар</h2>
+              <h2 className="text-xl font-semibold text-white">{editingProduct ? 'Редактировать товар' : 'Добавить товар'}</h2>
               <button onClick={() => setShowModal(false)} className="p-2 hover:bg-gray-800 rounded-lg text-gray-400 hover:text-white"><X className="w-5 h-5" /></button>
             </div>
             <form onSubmit={handleCreateProduct} className="p-6 space-y-4">
-              <div><label className="block text-sm font-medium mb-2 text-gray-300">Название *</label><input name="name" required className="w-full px-4 py-3 bg-gray-800 border border-gray-700 rounded-xl text-white" /></div>
-              <div><label className="block text-sm font-medium mb-2 text-gray-300">Slug</label><input name="slug" className="w-full px-4 py-3 bg-gray-800 border border-gray-700 rounded-xl text-white" /></div>
-              <div><label className="block text-sm font-medium mb-2 text-gray-300">Категория</label><select name="categoryId" className="w-full px-4 py-3 bg-gray-800 border border-gray-700 rounded-xl text-white"><option value="">Без категории</option>{categoriesData?.data?.map((cat: any) => (<option key={cat.id} value={cat.id}>{cat.name}</option>))}</select></div>
-              <div><label className="block text-sm font-medium mb-2 text-gray-300">Цена</label><input name="price" type="number" defaultValue="0" className="w-full px-4 py-3 bg-gray-800 border border-gray-700 rounded-xl text-white" /></div>
-              <div><label className="block text-sm font-medium mb-2 text-gray-300">Краткое описание</label><input name="shortDescription" className="w-full px-4 py-3 bg-gray-800 border border-gray-700 rounded-xl text-white" /></div>
-              <div><label className="block text-sm font-medium mb-2 text-gray-300">Описание</label><textarea name="description" rows={3} className="w-full px-4 py-3 bg-gray-800 border border-gray-700 rounded-xl text-white" /></div>
-              <div><label className="block text-sm font-medium mb-2 text-gray-300">Статус</label><select name="status" className="w-full px-4 py-3 bg-gray-800 border border-gray-700 rounded-xl text-white"><option value="active">Активный</option><option value="hidden">Скрытый</option></select></div>
+              <div><label className="block text-sm font-medium mb-2 text-gray-300">Название *</label><input name="name" required defaultValue={editingProduct?.name || ''} className="w-full px-4 py-3 bg-gray-800 border border-gray-700 rounded-xl text-white" /></div>
+              <div><label className="block text-sm font-medium mb-2 text-gray-300">Slug</label><input name="slug" defaultValue={editingProduct?.slug || ''} className="w-full px-4 py-3 bg-gray-800 border border-gray-700 rounded-xl text-white" /></div>
+              <div><label className="block text-sm font-medium mb-2 text-gray-300">Инструкция</label><select name="instructionTemplateId" defaultValue={editingProduct?.instructionTemplateId || ''} className="w-full px-4 py-3 bg-gray-800 border border-gray-700 rounded-xl text-white"><option value="">Без инструкции</option>{instructionsData?.data?.instructions?.map((inst: any) => (<option key={inst.id} value={inst.id}>{inst.name}</option>))}</select></div>
+              <div>
+                <label className="block text-sm font-medium mb-2 text-gray-300">Изображение</label>
+                {editingProduct?.imageUrl && (
+                  <div className="mb-2">
+                    <img src={editingProduct.imageUrl} alt={editingProduct.name} className="w-24 h-24 object-cover rounded-lg" />
+                  </div>
+                )}
+                <input 
+                  type="file" 
+                  accept="image/*"
+                  onChange={(e) => {
+                    if (e.target.files?.[0]) {
+                      setSelectedImage(e.target.files[0]);
+                    }
+                  }}
+                  className="w-full px-4 py-3 bg-gray-800 border border-gray-700 rounded-xl text-white file:mr-4 file:py-2 file:px-4 file:rounded-xl file:border-0 file:text-sm file:font-semibold file:bg-indigo-600 file:text-white hover:file:bg-indigo-700"
+                />
+              </div>
+              <div><label className="block text-sm font-medium mb-2 text-gray-300">Цена</label><input name="price" type="number" defaultValue={editingProduct?.price || 0} className="w-full px-4 py-3 bg-gray-800 border border-gray-700 rounded-xl text-white" /></div>
+              <div><label className="block text-sm font-medium mb-2 text-gray-300">Краткое описание</label><input name="shortDescription" defaultValue={editingProduct?.shortDescription || ''} className="w-full px-4 py-3 bg-gray-800 border border-gray-700 rounded-xl text-white" /></div>
+              <div><label className="block text-sm font-medium mb-2 text-gray-300">Описание</label><textarea name="description" rows={3} defaultValue={editingProduct?.description || ''} className="w-full px-4 py-3 bg-gray-800 border border-gray-700 rounded-xl text-white" /></div>
+              <div><label className="block text-sm font-medium mb-2 text-gray-300">Статус</label><select name="status" defaultValue={editingProduct?.status || 'active'} className="w-full px-4 py-3 bg-gray-800 border border-gray-700 rounded-xl text-white"><option value="active">Активный</option><option value="hidden">Скрытый</option></select></div>
               
+              {!editingProduct && (
               <div className="border-t border-gray-700 pt-4 mt-4">
                 <div className="flex items-center gap-2 mb-4">
                   <input type="checkbox" id="generateCodes" name="generateCodes" className="w-4 h-4 rounded bg-gray-800 border-gray-600 text-indigo-600" />
@@ -169,10 +226,11 @@ export default function ProductsPage() {
                   <div><label className="block text-xs text-gray-500 mb-1">Лимит использования</label><input name="codesLimit" type="number" defaultValue="1" min="1" className="w-full px-3 py-2 bg-gray-800 border border-gray-700 rounded-xl text-white text-sm" /></div>
                 </div>
               </div>
+              )}
 
               <div className="flex gap-3 pt-4">
-                <button type="button" onClick={() => setShowModal(false)} className="flex-1 px-4 py-3 border border-gray-600 text-gray-300 rounded-xl hover:bg-gray-800">Отмена</button>
-                <button type="submit" disabled={createMutation.isPending} className="flex-1 px-4 py-3 bg-indigo-600 text-white rounded-xl hover:bg-indigo-700 disabled:opacity-50">{createMutation.isPending ? 'Создание...' : 'Создать'}</button>
+                <button type="button" onClick={() => { setShowModal(false); setEditingProduct(null); setSelectedImage(null); }} className="flex-1 px-4 py-3 border border-gray-600 text-gray-300 rounded-xl hover:bg-gray-800">Отмена</button>
+                <button type="submit" disabled={createMutation.isPending || updateMutation.isPending} className="flex-1 px-4 py-3 bg-indigo-600 text-white rounded-xl hover:bg-indigo-700 disabled:opacity-50">{createMutation.isPending || updateMutation.isPending ? (editingProduct ? 'Сохранение...' : 'Создание...') : (editingProduct ? 'Сохранить' : 'Создать')}</button>
               </div>
             </form>
           </div>

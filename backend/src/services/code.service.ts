@@ -192,13 +192,7 @@ export async function activateCode(code: string, userIp: string, userAgent?: str
       };
     }
 
-    if (activationCode.status === 'used') {
-      await recordFailedAttempt(userIp);
-      return {
-        success: false,
-        error: 'Код уже использован'
-      };
-    }
+    // Проверка срока действия (без проверки статуса 'used' - код работает бесконечно)
 
     // 5. Проверка срока действия
     if (activationCode.expiresAt && activationCode.expiresAt < new Date()) {
@@ -210,15 +204,7 @@ export async function activateCode(code: string, userIp: string, userAgent?: str
       };
     }
 
-    // 6. Проверка лимита использований
-    if (activationCode.usageCount >= activationCode.usageLimit) {
-      await activationCode.update({ status: 'used' });
-      await recordFailedAttempt(userIp);
-      return {
-        success: false,
-        error: 'Лимит использований исчерпан'
-      };
-    }
+    // 6. Лимит использований убран - код работает бесконечно
 
     // 7. Проверка привязки к товару
     const product = (activationCode as any).product;
@@ -246,10 +232,10 @@ export async function activateCode(code: string, userIp: string, userAgent?: str
       instruction = applyMetadataToInstruction(instruction, activationCode.metadata);
     }
 
-    // 9. Активация кода - обновление в транзакции
+    // 7. Активация кода - обновление в транзакции
+    // Код работает бесконечно, поэтому не меняем статус на 'used'
     await ActivationCode.update(
       {
-        status: 'used',
         usageCount: activationCode.usageCount + 1,
         activatedAt: new Date(),
         userIp: userIp

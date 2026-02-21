@@ -149,6 +149,7 @@ export async function createProduct(data: {
   name: string;
   slug?: string;
   categoryId?: string;
+  instructionTemplateId?: string;
   description?: string;
   shortDescription?: string;
   type?: string;
@@ -165,6 +166,7 @@ export async function updateProduct(id: string, data: Partial<{
   name: string;
   slug: string;
   categoryId: string;
+  instructionTemplateId: string;
   description: string;
   shortDescription: string;
   type: string;
@@ -179,6 +181,15 @@ export async function updateProduct(id: string, data: Partial<{
 
 export async function deleteProduct(id: string) {
   const response = await api.delete(`/admin/products/${id}`);
+  return response.data;
+}
+
+export async function uploadProductImage(productId: string, file: File) {
+  const formData = new FormData();
+  formData.append('image', file);
+  const response = await api.post(`/admin/products/${productId}/image`, formData, {
+    headers: { 'Content-Type': 'multipart/form-data' },
+  });
   return response.data;
 }
 

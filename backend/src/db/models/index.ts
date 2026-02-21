@@ -180,6 +180,7 @@ interface ProductAttributes {
   type: string;
   instruction: string | null;
   instructionTemplateId: string | null;
+  imageUrl: string | null;
   status: string;
   price: number;
   isFeatured: boolean;
@@ -187,7 +188,7 @@ interface ProductAttributes {
   updatedAt: Date;
 }
 
-interface ProductCreationAttributes extends Optional<ProductAttributes, 'id' | 'categoryId' | 'description' | 'shortDescription' | 'instruction' | 'instructionTemplateId' | 'status' | 'price' | 'isFeatured' | 'createdAt' | 'updatedAt'> {}
+interface ProductCreationAttributes extends Optional<ProductAttributes, 'id' | 'categoryId' | 'description' | 'shortDescription' | 'instruction' | 'instructionTemplateId' | 'imageUrl' | 'status' | 'price' | 'isFeatured' | 'createdAt' | 'updatedAt'> {}
 
 export class Product extends Model<ProductAttributes, ProductCreationAttributes> implements ProductAttributes {
   declare id: string;
@@ -199,6 +200,7 @@ export class Product extends Model<ProductAttributes, ProductCreationAttributes>
   declare type: string;
   declare instruction: string | null;
   declare instructionTemplateId: string | null;
+  declare imageUrl: string | null;
   declare status: string;
   declare price: number;
   declare isFeatured: boolean;
@@ -248,6 +250,11 @@ Product.init(
       type: DataTypes.UUID,
       allowNull: true,
       field: 'instruction_template_id',
+    },
+    imageUrl: {
+      type: DataTypes.STRING(500),
+      allowNull: true,
+      field: 'image_url',
     },
     status: {
       type: DataTypes.STRING(50),
@@ -1048,6 +1055,7 @@ Category.belongsTo(Category, { as: 'parent', foreignKey: 'parentId' });
 
 // Товары
 Product.belongsTo(Category, { foreignKey: 'categoryId', as: 'category' });
+Product.belongsTo(InstructionTemplate, { foreignKey: 'instructionTemplateId', as: 'instructionTemplate' });
 Product.hasMany(ProductFile, { foreignKey: 'productId', as: 'files' });
 Product.hasMany(InstructionTemplate, { foreignKey: 'productId', as: 'instructionTemplates' });
 Product.hasMany(ActivationCode, { foreignKey: 'productId', as: 'codes' });

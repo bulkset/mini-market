@@ -40,7 +40,8 @@ export async function testConnection(): Promise<boolean> {
 
 export async function syncDatabase(): Promise<void> {
   try {
-    await sequelize.sync({ alter: config.nodeEnv === 'development' });
+    // В development режиме не меняем структуру таблиц, чтобы избежать ошибок
+    await sequelize.sync({ alter: false });
     console.log('✓ Синхронизация моделей с БД выполнена');
   } catch (error) {
     console.error('✗ Ошибка синхронизации:', error);

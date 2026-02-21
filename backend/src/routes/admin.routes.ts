@@ -77,7 +77,7 @@ router.get('/categories', async (req: AuthRequest, res: Response) => {
       order: [['sortOrder', 'ASC']],
       include: [{ model: Category, as: 'children' }]
     });
-    res.json({ success: true, data: categories });
+    res.json({ success: true, data: categories.map((c: any) => c.toJSON()) });
   } catch (error) {
     res.status(500).json({ success: false, error: 'Ошибка получения категорий' });
   }
@@ -210,14 +210,15 @@ router.get('/products', async (req: AuthRequest, res: Response) => {
       offset: (Number(page) - 1) * Number(limit),
       order: [['createdAt', 'DESC']],
       include: [
-        { model: Category, as: 'category', attributes: ['id', 'name', 'slug'] }
+        { model: Category, as: 'category', attributes: ['id', 'name', 'slug'] },
+        { model: InstructionTemplate, as: 'instructionTemplate', attributes: ['id', 'name'] }
       ]
     });
 
     res.json({ 
       success: true, 
       data: {
-        products: products.rows,
+        products: products.rows.map((p: any) => p.toJSON()),
         total: products.count,
         page: Number(page),
         limit: Number(limit)
@@ -234,13 +235,14 @@ router.get('/products', async (req: AuthRequest, res: Response) => {
  */
 router.post('/products', async (req: AuthRequest, res: Response) => {
   try {
-    const { name, slug, categoryId, description, shortDescription, type, instruction, status } = req.body;
+    const { name, slug, categoryId, instructionTemplateId, description, shortDescription, type, instruction, status } = req.body;
     
     const product = await Product.create({
       id: uuidv4(),
       name,
       slug: slug || name.toLowerCase().replace(/\s+/g, '-'),
       categoryId: categoryId || null,
+      instructionTemplateId: instructionTemplateId || null,
       description,
       shortDescription,
       type: type || 'digital_file',
@@ -301,7 +303,7 @@ router.put('/products/:id', async (req: AuthRequest, res: Response) => {
 
 /**
  * DELETE /api/v1/admin/products/:id
- * Удаление товара
+ * Удаление товара (полное удаление из базы)
  */
 router.delete('/products/:id', async (req: AuthRequest, res: Response) => {
   try {
@@ -312,21 +314,67 @@ router.delete('/products/:id', async (req: AuthRequest, res: Response) => {
       return res.status(404).json({ success: false, error: 'Товар не найден' });
     }
 
-    await product.update({ status: 'hidden' });
+    // Удаляем связанные файлы
+    const files = await ProductFile.findAll({ where: { productId: id } });
+    for (const file of files) {
+      const filePath = path.join(process.cwd(), file.filePath);
+      if (fs.existsSync(filePath)) {
+        fs.unlinkSync(filePath);
+      }
+      await file.destroy();
+    }
 
-    await AdminLog.create({
-      id: uuidv4(),
-      userId: req.user?.id,
-      action: 'delete',
-      entityType: 'product',
-      entityId: id,
-      oldData: product.toJSON(),
-      ipAddress: req.ip || undefined
-    });
+    // Удаляем связанные коды и их активации
+    const codes = await ActivationCode.findAll({ where: { productId: id } });
+    for (const code of codes) {
+      await Activation.destroy({ where: { codeId: code.id } });
+    }
+    await ActivationCode.destroy({ where: { productId: id } });
+
+    // Удаляем связанные инструкции
+    await InstructionTemplate.destroy({ where: { productId: id } });
+
+    await product.destroy();
 
     res.json({ success: true });
   } catch (error) {
+    console.error('Delete product error:', error);
     res.status(500).json({ success: false, error: 'Ошибка удаления товара' });
+  }
+});
+
+/**
+ * POST /api/v1/admin/products/:id/image
+ * Загрузка изображения товара
+ */
+router.post('/products/:id/image', upload.single('image'), async (req: AuthRequest, res: Response) => {
+  try {
+    const { id } = req.params;
+    
+    if (!req.file) {
+      return res.status(400).json({ success: false, error: 'Файл не загружен' });
+    }
+
+    const product = await Product.findByPk(id);
+    if (!product) {
+      return res.status(404).json({ success: false, error: 'Товар не найден' });
+    }
+
+    // Удаляем старое изображение если есть
+    if (product.imageUrl) {
+      const oldPath = path.join(process.cwd(), product.imageUrl);
+      if (fs.existsSync(oldPath)) {
+        fs.unlinkSync(oldPath);
+      }
+    }
+
+    const imageUrl = `/uploads/${req.file.filename}`;
+    await product.update({ imageUrl });
+
+    res.json({ success: true, data: { imageUrl } });
+  } catch (error) {
+    console.error('Upload image error:', error);
+    res.status(500).json({ success: false, error: 'Ошибка загрузки изображения' });
   }
 });
 
@@ -431,7 +479,7 @@ router.get('/codes', async (req: AuthRequest, res: Response) => {
     res.json({ 
       success: true, 
       data: {
-        codes: codes.rows,
+        codes: codes.rows.map((c: any) => c.toJSON()),
         total: codes.count,
         page: Number(page),
         limit: Number(limit)
@@ -796,7 +844,7 @@ router.get('/instructions', async (req: AuthRequest, res: Response) => {
     const { page = 1, limit = 20, search } = req.query;
     
     const where: any = {};
-    if (search) where.title = { [Op.iLike]: `%${search}%` };
+    if (search) where.name = { [Op.iLike]: `%${search}%` };
 
     const instructions = await InstructionTemplate.findAndCountAll({
       where,
@@ -808,13 +856,14 @@ router.get('/instructions', async (req: AuthRequest, res: Response) => {
     res.json({ 
       success: true, 
       data: {
-        instructions: instructions.rows,
+        instructions: instructions.rows.map((i: any) => i.toJSON()),
         total: instructions.count,
         page: Number(page),
         limit: Number(limit)
       }
     });
   } catch (error) {
+    console.error('Instructions error:', error);
     res.status(500).json({ success: false, error: 'Ошибка получения инструкций' });
   }
 });
@@ -832,22 +881,12 @@ router.post('/instructions', async (req: AuthRequest, res: Response) => {
       name: title,
       content,
       sortOrder: sortOrder || 0,
-      isActive: isActive !== false,
-      productId: null
+      isActive: isActive !== false
     });
 
-    await AdminLog.create({
-      id: uuidv4(),
-      userId: req.user?.id,
-      action: 'create',
-      entityType: 'instruction',
-      entityId: instruction.id,
-      newData: instruction.toJSON(),
-      ipAddress: req.ip || undefined
-    });
-
-    res.status(201).json({ success: true, data: instruction });
+    res.status(201).json({ success: true, data: instruction.toJSON() });
   } catch (error) {
+    console.error('Create instruction error:', error);
     res.status(500).json({ success: false, error: 'Ошибка создания инструкции' });
   }
 });
@@ -866,7 +905,12 @@ router.put('/instructions/:id', async (req: AuthRequest, res: Response) => {
     }
 
     const oldData = instruction.toJSON();
-    await instruction.update(req.body);
+    // Поддержка как title так и name для обратной совместимости
+    const updateData = { ...req.body };
+    if (updateData.title && !updateData.name) {
+      updateData.name = updateData.title;
+    }
+    await instruction.update(updateData);
 
     await AdminLog.create({
       id: uuidv4(),
