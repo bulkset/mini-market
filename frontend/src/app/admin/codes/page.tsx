@@ -65,7 +65,6 @@ export default function CodesPage() {
     if (file) {
       const formData = new FormData();
       formData.append('file', file);
-      // Используем fetch напрямую для FormData
       const token = localStorage.getItem('accessToken');
       const response = await fetch('http://localhost:3001/api/v1/admin/codes/import', {
         method: 'POST',

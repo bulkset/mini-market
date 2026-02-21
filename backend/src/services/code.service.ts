@@ -4,14 +4,10 @@ import { v4 as uuidv4 } from 'uuid';
 import { ActivationCode, Activation, Product, ProductFile, InstructionTemplate, CodeAttempt, Setting } from '../db/models/index.js';
 import { config } from '../config/index.js';
 
-// Кэш настроек
 let settingsCache: Record<string, any> = {};
 let settingsCacheTime = 0;
-const SETTINGS_CACHE_TTL = 60000; // 1 минута
+const SETTINGS_CACHE_TTL = 60000;
 
-/**
- * Получение настроек из базы данных
- */
 async function getSettings(): Promise<Record<string, any>> {
   const now = Date.now();
   if (settingsCache && (now - settingsCacheTime) < SETTINGS_CACHE_TTL) {
@@ -70,7 +66,6 @@ export async function checkIpBlocked(ip: string): Promise<CodeValidationResult> 
   const windowMinutes = parseInt(settings.max_attempts_window_minutes) || config.security.codeAttempts.windowMinutes;
   const blockDurationMinutes = parseInt(settings.block_duration_minutes) || config.security.codeAttempts.blockDurationMinutes;
   
-  // Ищем последнюю попытку для этого IP
   const lastAttempt = await CodeAttempt.findOne({
     where: {
       ipAddress: ip,
@@ -90,7 +85,6 @@ export async function checkIpBlocked(ip: string): Promise<CodeValidationResult> 
     };
   }
 
-  // Проверяем количество неудачных попыток за последнее окно времени
   const recentAttempts = await CodeAttempt.count({
     where: {
       ipAddress: ip,
@@ -100,7 +94,6 @@ export async function checkIpBlocked(ip: string): Promise<CodeValidationResult> 
   });
 
   if (recentAttempts >= max) {
-    // Блокируем IP
     const blockedUntil = new Date(Date.now() + blockDurationMinutes * 60 * 1000);
     await CodeAttempt.update(
       { blockedUntil },
@@ -174,7 +167,6 @@ export async function recordSuccessAttempt(ip: string): Promise<void> {
  */
 export async function activateCode(code: string, userIp: string, userAgent?: string): Promise<ActivationResult> {
   try {
-    // 1. Проверка блокировки IP
     const ipCheck = await checkIpBlocked(userIp);
     if (!ipCheck.isValid) {
       return {
@@ -183,7 +175,6 @@ export async function activateCode(code: string, userIp: string, userAgent?: str
       };
     }
 
-    // 2. Поиск кода в базе
     const activationCode = await ActivationCode.findOne({
       where: { code },
       include: [
@@ -209,7 +200,6 @@ export async function activateCode(code: string, userIp: string, userAgent?: str
       ]
     });
 
-    // Если есть instructionTemplateId, загружаем его отдельно
     if (activationCode && (activationCode as any).product && (activationCode as any).product.instructionTemplateId) {
       const instructionTemplate = await InstructionTemplate.findByPk((activationCode as any).product.instructionTemplateId);
       if (instructionTemplate) {
@@ -217,7 +207,6 @@ export async function activateCode(code: string, userIp: string, userAgent?: str
       }
     }
 
-    // 3. Проверка существования кода
     if (!activationCode) {
       await recordFailedAttempt(userIp);
       return {
@@ -226,7 +215,6 @@ export async function activateCode(code: string, userIp: string, userAgent?: str
       };
     }
 
-    // 4. Проверка статуса кода
     if (activationCode.status === 'blocked') {
       await recordFailedAttempt(userIp);
       return {
@@ -237,7 +225,6 @@ export async function activateCode(code: string, userIp: string, userAgent?: str
 
     // Проверка срока действия (без проверки статуса 'used' - код работает бесконечно)
 
-    // 5. Проверка срока действия
     if (activationCode.expiresAt && activationCode.expiresAt < new Date()) {
       await activationCode.update({ status: 'expired' });
       await recordFailedAttempt(userIp);
@@ -249,7 +236,6 @@ export async function activateCode(code: string, userIp: string, userAgent?: str
 
     // 6. Лимит использований убран - код работает бесконечно
 
-    // 7. Проверка привязки к товару
     const product = (activationCode as any).product;
     if (!product) {
       await recordFailedAttempt(userIp);
@@ -259,22 +245,17 @@ export async function activateCode(code: string, userIp: string, userAgent?: str
       };
     }
 
-    // 8. Выбор инструкции по типу кода
     let instruction = product.instruction;
     
-    // Для текстовых инструкций используем описание, если инструкция не задана
     if (!instruction && product.type === 'text_instruction') {
       instruction = product.description;
     }
     
-    // Пробуем получить инструкцию из шаблонов (hasMany)
     if (product.instructionTemplates && product.instructionTemplates.length > 0) {
-      // Сначала ищем по codeType
       let template = product.instructionTemplates.find(
         (t: any) => t.codeType === activationCode.codeType
       );
       
-      // Если не нашли по codeType, используем первый попавшийся шаблон
       if (!template) {
         template = product.instructionTemplates.find((t: any) => t.isActive);
       }
@@ -284,23 +265,18 @@ export async function activateCode(code: string, userIp: string, userAgent?: str
       }
     }
     
-    // Если инструкция всё ещё не найдена, пробуем из связи belongsTo
     if (!instruction && product.instructionTemplate && product.instructionTemplate.content) {
       instruction = product.instructionTemplate.content;
     }
     
-    // ВСЕГДА используем описание как запасной вариант для инструкции (только если ничего не нашли)
     if (!instruction && product.description) {
       instruction = product.description;
     }
 
-    // Применение метаданных кода к инструкции (уникальный контент)
     if (activationCode.metadata && instruction) {
       instruction = applyMetadataToInstruction(instruction, activationCode.metadata);
     }
 
-    // 7. Активация кода - обновление в транзакции
-    // Код работает бесконечно, поэтому не меняем статус на 'used'
     await ActivationCode.update(
       {
         usageCount: activationCode.usageCount + 1,
@@ -310,7 +286,6 @@ export async function activateCode(code: string, userIp: string, userAgent?: str
       { where: { id: activationCode.id } }
     );
 
-    // 10. Логирование активации
     await Activation.create({
       id: uuidv4(),
       codeId: activationCode.id,
@@ -320,11 +295,8 @@ export async function activateCode(code: string, userIp: string, userAgent?: str
       sessionData: null
     });
 
-    // 11. Запись успешной попытки
     await recordSuccessAttempt(userIp);
 
-    // 12. Формирование ответа
-    // Получаем тип инструкции
     let instructionType = 'simple';
     if (product.instructionTemplate && product.instructionTemplate.type) {
       instructionType = product.instructionTemplate.type;
@@ -374,7 +346,6 @@ function applyMetadataToInstruction(instruction: string, metadata: Record<string
   let result = instruction;
   
   for (const [key, value] of Object.entries(metadata)) {
-    // Заменяем плейсхолдеры вида {{key}} на значения
     const placeholder = `{{${key}}}`;
     result = result.replace(new RegExp(placeholder, 'g'), String(value));
   }
@@ -395,15 +366,13 @@ export async function generateCodes(
   codeType: string | null = null,
   createdBy: string | null = null
 ): Promise<string[]> {
-  // Получаем настройки по умолчанию
   const settings = await getSettings();
   const defaultExpiration = settings.default_expiration_days ? parseInt(settings.default_expiration_days) : config.security.defaultCodesExpirationDays;
   
-  // Используем переданное значение или значение по умолчанию из настроек
   const effectiveExpiresInDays = expiresInDays !== null ? expiresInDays : defaultExpiration;
   
   const codes: string[] = [];
-  const chars = 'ABCDEFGHJKLMNPQRSTUVWXYZ23456789'; // Без похожих символов
+  const chars = 'ABCDEFGHJKLMNPQRSTUVWXYZ23456789';
   
   for (let i = 0; i < count; i++) {
     let code = prefix;
@@ -411,7 +380,6 @@ export async function generateCodes(
       code += chars.charAt(Math.floor(Math.random() * chars.length));
     }
     
-    // Проверка уникальности
     const exists = await ActivationCode.findOne({ where: { code } });
     if (exists) {
       i--;
@@ -452,8 +420,7 @@ export async function importCodesFromCSV(
   
   for (const row of data) {
     try {
-      // Проверка уникальности
-      const exists = await ActivationCode.findOne({ where: { code: row.code } });
+    const exists = await ActivationCode.findOne({ where: { code: row.code } });
       if (exists) {
         errors.push(`Код ${row.code} уже существует`);
         continue;
@@ -522,7 +489,6 @@ export async function unblockCode(codeId: string): Promise<boolean> {
   
   if (!code) return false;
   
-  // При разблокировке всегда возвращаем статус 'active'
   const result = await ActivationCode.update(
     { status: 'active' },
     { where: { id: codeId } }

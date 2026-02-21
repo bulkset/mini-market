@@ -6,15 +6,7 @@ const nextConfig = {
     remotePatterns: [
       {
         protocol: 'https',
-        hostname: 'kabanstore.com',
-      },
-      {
-        protocol: 'https',
-        hostname: 'www.kabanstore.com',
-      },
-      {
-        protocol: 'http',
-        hostname: 'localhost',
+        hostname: '**',
       },
     ],
   },
@@ -22,7 +14,7 @@ const nextConfig = {
     return [
       {
         source: '/api/:path*',
-        destination: 'http://localhost:3001/api/:path*',
+        destination: process.env.NEXT_PUBLIC_API_URL || 'http://localhost:3001/api/:path*',
       },
     ];
   },

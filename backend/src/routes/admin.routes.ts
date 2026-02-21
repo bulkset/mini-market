@@ -30,11 +30,9 @@ import { config } from '../config/index.js';
 
 const router = Router();
 
-// Применение middleware аутентификации ко всем маршрутам
 router.use(authenticateToken);
 router.use(requireAdmin);
 
-// Настройка multer для загрузки файлов
 const storage = multer.diskStorage({
   destination: (req, file, cb) => {
     const uploadPath = config.upload.dir;
@@ -101,7 +99,6 @@ router.post('/categories', async (req: AuthRequest, res: Response) => {
       isActive: true
     });
 
-    // Логирование
     await AdminLog.create({
       id: uuidv4(),
       userId: req.user?.id,
@@ -237,12 +234,10 @@ router.post('/products', async (req: AuthRequest, res: Response) => {
   try {
     const { name, categoryId, instructionTemplateId, imageUrl, description, shortDescription, type, instruction, status } = req.body;
     
-    // Преобразуем пустые строки в null
     const catId = categoryId && categoryId.trim() ? categoryId : null;
     const instTplId = instructionTemplateId && instructionTemplateId.trim() ? instructionTemplateId : null;
     const imgUrl = imageUrl && imageUrl.trim() ? imageUrl : null;
     
-    // Генерируем slug из названия
     const slug = name
       .toLowerCase()
       .replace(/[^а-яa-z0-9]+/g, '-')
@@ -326,7 +321,6 @@ router.delete('/products/:id', async (req: AuthRequest, res: Response) => {
       return res.status(404).json({ success: false, error: 'Товар не найден' });
     }
 
-    // Удаляем связанные файлы
     const files = await ProductFile.findAll({ where: { productId: id } });
     for (const file of files) {
       const filePath = path.join(process.cwd(), file.filePath);
@@ -336,14 +330,12 @@ router.delete('/products/:id', async (req: AuthRequest, res: Response) => {
       await file.destroy();
     }
 
-    // Удаляем связанные коды и их активации
     const codes = await ActivationCode.findAll({ where: { productId: id } });
     for (const code of codes) {
       await Activation.destroy({ where: { codeId: code.id } });
     }
     await ActivationCode.destroy({ where: { productId: id } });
 
-    // Удаляем связанные инструкции
     await InstructionTemplate.destroy({ where: { productId: id } });
 
     await product.destroy();
@@ -412,7 +404,6 @@ router.delete('/files/:id', async (req: AuthRequest, res: Response) => {
       return res.status(404).json({ success: false, error: 'Файл не найден' });
     }
 
-    // Удаление физического файла
     const filePath = path.join(process.cwd(), file.filePath);
     if (fs.existsSync(filePath)) {
       fs.unlinkSync(filePath);
@@ -519,7 +510,6 @@ router.post('/codes/import', upload.single('file'), async (req: AuthRequest, res
       return res.status(400).json({ success: false, error: 'Файл не загружен' });
     }
 
-    // Чтение и парсинг CSV
     const content = fs.readFileSync(req.file.path, 'utf-8');
     const lines = content.split('\n').filter(line => line.trim());
     const headers = lines[0].split(',').map(h => h.trim().toLowerCase());
@@ -535,7 +525,6 @@ router.post('/codes/import', upload.single('file'), async (req: AuthRequest, res
 
     const result = await importCodesFromCSV(data, req.user?.id || null);
 
-    // Удаление временного файла
     fs.unlinkSync(req.file.path);
 
     await AdminLog.create({
@@ -569,7 +558,6 @@ router.get('/codes/export', async (req: AuthRequest, res: Response) => {
       status as string
     );
 
-    // Формирование CSV
     const headers = ['code', 'product', 'status', 'usage_limit', 'usage_count', 'expires_at', 'created_at'];
     const csv = [
       headers.join(','),
@@ -658,19 +646,14 @@ router.post('/codes/:id/unblock', async (req: AuthRequest, res: Response) => {
  */
 router.get('/stats', async (req: AuthRequest, res: Response) => {
   try {
-    // Общее количество кодов
     const totalCodes = await ActivationCode.count();
     
-    // Использованные коды
     const usedCodes = await ActivationCode.count({ where: { status: 'used' } });
     
-    // Активные коды
     const activeCodes = await ActivationCode.count({ where: { status: 'active' } });
     
-    // Блокированные коды
     const blockedCodes = await ActivationCode.count({ where: { status: 'blocked' } });
     
-    // Статистика по товарам
     const productStats = await ActivationCode.findAll({
       attributes: [
         [sequelize.col('ActivationCode.product_id'), 'productId'],
@@ -682,7 +665,6 @@ router.get('/stats', async (req: AuthRequest, res: Response) => {
       raw: false
     });
 
-    // Статистика по датам (последние 30 дней)
     const dateStats = await Activation.findAll({
       attributes: [
         [sequelize.fn('DATE', sequelize.col('activated_at')), 'date'],

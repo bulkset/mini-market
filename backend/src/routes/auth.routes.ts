@@ -1,4 +1,4 @@
-import { Router, Request, Response } from 'express';
+  import { Router, Request, Response } from 'express';
 import jwt from 'jsonwebtoken';
 import bcrypt from 'bcryptjs';
 import { User } from '../db/models/index.js';
@@ -22,7 +22,6 @@ router.post('/login', async (req: Request, res: Response) => {
       });
     }
 
-    // Поиск пользователя
     const user = await User.findOne({ where: { email } });
 
     if (!user) {
@@ -32,7 +31,6 @@ router.post('/login', async (req: Request, res: Response) => {
       });
     }
 
-    // Проверка пароля
     const isPasswordValid = await bcrypt.compare(password, user.passwordHash);
 
     if (!isPasswordValid) {
@@ -42,7 +40,6 @@ router.post('/login', async (req: Request, res: Response) => {
       });
     }
 
-    // Проверка активности
     if (!user.isActive) {
       return res.status(401).json({
         success: false,
@@ -50,10 +47,8 @@ router.post('/login', async (req: Request, res: Response) => {
       });
     }
 
-    // Обновление времени последнего входа
     await user.update({ lastLogin: new Date() });
 
-    // Генерация токенов
     const accessToken = jwt.sign(
       { id: user.id, email: user.email, role: user.role },
       config.jwt.secret,
@@ -104,10 +99,8 @@ router.post('/refresh', async (req: Request, res: Response) => {
       });
     }
 
-    // Проверка refresh токена
     const decoded = jwt.verify(refreshToken, config.jwt.refreshSecret) as { id: string };
 
-    // Поиск пользователя
     const user = await User.findByPk(decoded.id);
 
     if (!user || !user.isActive) {
@@ -117,7 +110,6 @@ router.post('/refresh', async (req: Request, res: Response) => {
       });
     }
 
-    // Генерация нового access токена
     const accessToken = jwt.sign(
       { id: user.id, email: user.email, role: user.role },
       config.jwt.secret,
@@ -153,7 +145,6 @@ router.post('/register', async (req: Request, res: Response) => {
       });
     }
 
-    // Проверка существования пользователя
     const existingUser = await User.findOne({ where: { email } });
 
     if (existingUser) {
@@ -163,10 +154,8 @@ router.post('/register', async (req: Request, res: Response) => {
       });
     }
 
-    // Хеширование пароля
     const passwordHash = await bcrypt.hash(password, 12);
 
-    // Создание пользователя
     const user = await User.create({
       email,
       passwordHash,

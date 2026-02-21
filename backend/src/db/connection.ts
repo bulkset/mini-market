@@ -3,7 +3,6 @@ import { config } from '../config/index.js';
 
 const dbConfig = config.db;
 
-// Создаем sequelize с поддержкой SQLite
 export const sequelize = new Sequelize({
   dialect: dbConfig.type as 'sqlite' | 'postgres',
   storage: dbConfig.type === 'sqlite' ? dbConfig.storage : undefined,
@@ -40,7 +39,6 @@ export async function testConnection(): Promise<boolean> {
 
 export async function syncDatabase(): Promise<void> {
   try {
-    // В development режиме не меняем структуру таблиц, чтобы избежать ошибок
     await sequelize.sync({ alter: false });
     console.log('✓ Синхронизация моделей с БД выполнена');
   } catch (error) {

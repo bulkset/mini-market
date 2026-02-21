@@ -82,10 +82,6 @@ User.init(
   }
 );
 
-// =====================================================
-// КАТЕГОРИИ
-// =====================================================
-
 interface CategoryAttributes {
   id: string;
   name: string;
@@ -165,10 +161,6 @@ Category.init(
     timestamps: true,
   }
 );
-
-// =====================================================
-// ТОВАРЫ
-// =====================================================
 
 interface ProductAttributes {
   id: string;
@@ -283,10 +275,6 @@ Product.init(
   }
 );
 
-// =====================================================
-// ШАБЛОНЫ ИНСТРУКЦИЙ
-// =====================================================
-
 interface InstructionTemplateAttributes {
   id: string;
   name: string;
@@ -373,10 +361,6 @@ InstructionTemplate.init(
     timestamps: true,
   }
 );
-
-// =====================================================
-// ФАЙЛЫ ТОВАРОВ
-// =====================================================
 
 interface ProductFileAttributes {
   id: string;
@@ -473,10 +457,6 @@ ProductFile.init(
     timestamps: true,
   }
 );
-
-// =====================================================
-// АКТИВАЦИОННЫЕ КОДЫ
-// =====================================================
 
 interface ActivationCodeAttributes {
   id: string;
@@ -606,10 +586,6 @@ ActivationCode.init(
   }
 );
 
-// =====================================================
-// АКТИВАЦИИ (ЛОГ)
-// =====================================================
-
 interface ActivationAttributes {
   id: string;
   codeId: string;
@@ -674,10 +650,6 @@ Activation.init(
     ],
   }
 );
-
-// =====================================================
-// ЛОГИ АДМИНА
-// =====================================================
 
 interface AdminLogAttributes {
   id: string;
@@ -765,10 +737,6 @@ AdminLog.init(
   }
 );
 
-// =====================================================
-// ЯЗЫКИ
-// =====================================================
-
 interface LanguageAttributes {
   id: string;
   code: string;
@@ -828,10 +796,6 @@ Language.init(
     timestamps: false,
   }
 );
-
-// =====================================================
-// ПЕРЕВОДЫ
-// =====================================================
 
 interface TranslationAttributes {
   id: string;
@@ -909,10 +873,6 @@ Translation.init(
   }
 );
 
-// =====================================================
-// НАСТРОЙКИ
-// =====================================================
-
 interface SettingAttributes {
   id: string;
   key: string;
@@ -970,10 +930,6 @@ Setting.init(
     timestamps: false,
   }
 );
-
-// =====================================================
-// ПОПЫТКИ ВВОДА КОДА
-// =====================================================
 
 interface CodeAttemptAttributes {
   id: string;
@@ -1051,35 +1007,27 @@ CodeAttempt.init(
 // СВЯЗИ
 // =====================================================
 
-// Категории
 Category.hasMany(Category, { as: 'children', foreignKey: 'parentId' });
 Category.belongsTo(Category, { as: 'parent', foreignKey: 'parentId' });
 
-// Товары
 Product.belongsTo(Category, { foreignKey: 'categoryId', as: 'category' });
 Product.belongsTo(InstructionTemplate, { foreignKey: 'instructionTemplateId', as: 'instructionTemplate' });
 Product.hasMany(ProductFile, { foreignKey: 'productId', as: 'files' });
 Product.hasMany(InstructionTemplate, { foreignKey: 'productId', as: 'instructionTemplates' });
 Product.hasMany(ActivationCode, { foreignKey: 'productId', as: 'codes' });
 
-// Файлы товаров
 ProductFile.belongsTo(Product, { foreignKey: 'productId', as: 'product' });
 
-// Шаблоны инструкций
 InstructionTemplate.belongsTo(Product, { foreignKey: 'productId', as: 'product' });
 
-// Коды
 ActivationCode.belongsTo(Product, { foreignKey: 'productId', as: 'product' });
 ActivationCode.belongsTo(User, { foreignKey: 'createdBy', as: 'creator' });
 ActivationCode.hasMany(Activation, { foreignKey: 'codeId', as: 'activations' });
 
-// Активации
 Activation.belongsTo(ActivationCode, { foreignKey: 'codeId', as: 'code' });
 
-// Логи
 AdminLog.belongsTo(User, { foreignKey: 'userId', as: 'user' });
 
-// Переводы
 Translation.belongsTo(Language, { foreignKey: 'languageId', as: 'language' });
 
 export { sequelize };

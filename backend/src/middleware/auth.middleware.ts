@@ -28,14 +28,12 @@ export async function authenticateToken(
       return;
     }
 
-    // Проверка токена
     const decoded = jwt.verify(token, config.jwt.secret) as {
       id: string;
       email: string;
       role: string;
     };
 
-    // Проверка пользователя в БД
     const user = await User.findByPk(decoded.id);
 
     if (!user || !user.isActive) {
@@ -43,7 +41,6 @@ export async function authenticateToken(
       return;
     }
 
-    // Добавление данных пользователя в запрос
     req.user = {
       id: user.id,
       email: user.email,

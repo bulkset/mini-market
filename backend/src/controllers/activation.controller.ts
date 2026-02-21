@@ -11,7 +11,6 @@ export async function activateCodeHandler(req: Request, res: Response) {
     const userIp = req.ip || req.socket.remoteAddress || 'unknown';
     const userAgent = req.get('User-Agent');
 
-    // Валидация
     if (!code || typeof code !== 'string') {
       return res.status(400).json({
         success: false,
@@ -19,7 +18,6 @@ export async function activateCodeHandler(req: Request, res: Response) {
       });
     }
 
-    // Очистка кода от лишних символов
     const cleanCode = code.trim().toUpperCase();
 
     if (cleanCode.length < 4) {
@@ -29,7 +27,6 @@ export async function activateCodeHandler(req: Request, res: Response) {
       });
     }
 
-    // Активация
     const result = await activateCode(cleanCode, userIp, userAgent);
 
     if (!result.success) {

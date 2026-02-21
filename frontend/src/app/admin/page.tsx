@@ -39,7 +39,6 @@ export default function AdminPage() {
   const [sidebarOpen, setSidebarOpen] = useState(false);
   const [currentPath, setCurrentPath] = useState('');
 
-  // Проверка авторизации
   useEffect(() => {
     const token = localStorage.getItem('accessToken');
     if (!token) {

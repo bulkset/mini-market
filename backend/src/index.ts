@@ -16,7 +16,6 @@ const app: Express = express();
 // MIDDLEWARE
 // =====================================================
 
-// Безопасность
 app.use(helmet({
   crossOriginResourcePolicy: { policy: 'cross-origin' }
 }));
@@ -29,14 +28,12 @@ app.use(cors({
   allowedHeaders: ['Content-Type', 'Authorization']
 }));
 
-// Логирование
 if (config.nodeEnv === 'development') {
   app.use(morgan('dev'));
 } else {
   app.use(morgan('combined'));
 }
 
-// Ограничение частоты запросов (общее)
 const generalLimiter = rateLimit({
   windowMs: config.security.rateLimit.windowMs,
   max: config.security.rateLimit.maxRequests,
@@ -44,7 +41,6 @@ const generalLimiter = rateLimit({
 });
 app.use(generalLimiter);
 
-// Парсинг JSON
 app.use(express.json({ limit: '10mb' }));
 app.use(express.urlencoded({ extended: true }));
 
@@ -56,7 +52,6 @@ app.use(express.urlencoded({ extended: true }));
 app.post('/api/v1/activate', activateCodeHandler);
 app.get('/api/v1/activate/status/:code', checkCodeStatusHandler);
 
-// Публичные настройки магазина
 app.get('/api/v1/settings', async (req: Request, res: Response) => {
   try {
     const settings = await Setting.findAll();
@@ -76,13 +71,10 @@ app.get('/api/v1/settings', async (req: Request, res: Response) => {
   }
 });
 
-// Статические файлы (загруженные)
 app.use('/uploads', express.static(config.upload.dir));
 
-// Аутентификация администратора
 app.use('/api/v1/auth', authRoutes);
 
-// Админ-панель (защищена JWT)
 app.use('/api/v1/admin', adminRoutes);
 
 // Health check
@@ -94,12 +86,10 @@ app.get('/health', (req: Request, res: Response) => {
 // ERROR HANDLING
 // =====================================================
 
-// 404
 app.use((req: Request, res: Response) => {
   res.status(404).json({ success: false, error: 'Ресурс не найден' });
 });
 
-// Ошибки
 app.use((err: Error, req: Request, res: Response, next: NextFunction) => {
   console.error('Ошибка:', err);
   res.status(500).json({ success: false, error: 'Внутренняя ошибка сервера' });
@@ -111,17 +101,14 @@ app.use((err: Error, req: Request, res: Response, next: NextFunction) => {
 
 async function startServer() {
   try {
-    // Подключение к БД
     const dbConnected = await testConnection();
     if (!dbConnected) {
       console.error('Не удалось подключиться к базе данных');
       process.exit(1);
     }
 
-    // Синхронизация моделей
     await syncDatabase();
 
-    // Запуск сервера
     app.listen(config.port, () => {
       console.log(`✓ Сервер запущен на порту ${config.port}`);
       console.log(`✓ Режим: ${config.nodeEnv}`);

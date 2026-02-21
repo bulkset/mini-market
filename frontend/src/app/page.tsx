@@ -14,7 +14,6 @@ export default function Home() {
   const [currentSlide, setCurrentSlide] = useState(0);
 
   useEffect(() => {
-    // Загрузка настроек магазина
     getPublicSettings().then((data) => {
       if (data.success && data.data) {
         if (data.data.store_name) setStoreName(data.data.store_name);
@@ -28,7 +27,7 @@ export default function Home() {
       if (data.success) {
         setProduct(data.data);
         setError('');
-        setCurrentSlide(0); // Сброс слайда при новой активации
+        setCurrentSlide(0);
       } else {
         setError(data.error || 'Ошибка активации');
         setProduct(null);
@@ -148,7 +147,6 @@ export default function Home() {
                 <div>
                   <h3 className="text-sm font-medium text-gray-400 mb-2">Инструкция</h3>
                   {(product.instructionType === 'steps' || (product.instruction && product.instruction.includes('---'))) ? (
-                    // Пошаговая инструкция (слайды)
                     <div className="bg-gray-800/50 rounded-xl overflow-hidden">
                       {(() => {
                         const content = product.instruction || product.description || '';
@@ -187,7 +185,6 @@ export default function Home() {
                       })()}
                     </div>
                   ) : (
-                    // Простая инструкция
                     <div className="prose prose-invert prose-sm max-w-none p-4 bg-gray-800/50 rounded-xl">
                       <ReactMarkdown>
                         {product.instruction || product.description || ''}

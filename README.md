@@ -2,6 +2,8 @@
 
 Полноценное веб-приложение для управления и распространения цифровых товаров через активационные коды.
 
+> **Примечание:** По умолчанию используется SQLite (база данных в файле). Для больших нагрузок можно переключиться на PostgreSQL.
+
 ## Функционал
 
 ### Пользовательская часть
@@ -18,7 +20,7 @@
 
 ## Технологический стек
 
-- **Backend**: Node.js + Express + PostgreSQL + Sequelize
+- **Backend**: Node.js + Express + SQLite (по умолчанию) / PostgreSQL
 - **Frontend**: Next.js 14 + React + Tailwind CSS
 - **Аутентификация**: JWT (Access + Refresh tokens)
 
@@ -36,7 +38,7 @@ mini-market/
 
 ### Требования
 - Node.js 18+
-- PostgreSQL 14+
+- (SQLite включён в Node.js)
 
 ### 1. Клонирование и установка зависимостей
 
@@ -57,27 +59,10 @@ cd ../frontend && npm install
 ### 2. Настройка базы данных
 
 ```bash
-# Создайте базу данных PostgreSQL
-createdb mini_market
+# База данных SQLite уже включена (файл backend/database.sqlite будет создан автоматически)
 
 # Скопируйте файл настроек
 cp backend/.env.example backend/.env
-
-# Отредактируйте настройки подключения к БД
-nano backend/.env
-```
-
-Пример `.env`:
-```env
-PORT=3001
-NODE_ENV=development
-DB_HOST=localhost
-DB_PORT=5432
-DB_NAME=mini_market
-DB_USER=postgres
-DB_PASSWORD=ваш_пароль
-JWT_SECRET=ваш-secret-key
-JWT_REFRESH_SECRET=ваш-refresh-secret
 ```
 
 ### 3. Запуск

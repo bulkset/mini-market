@@ -36,7 +36,7 @@ export default function ProductsPage() {
   useEffect(() => { setCurrentPath(window.location.pathname); }, []);
 
   const { data: productsData, isLoading } = useQuery({ queryKey: ['products', search], queryFn: () => getProducts({ search }) });
-  const { data: instructionsData } = useQuery({ queryKey: ['instructions'], queryFn: getInstructions });
+  const { data: instructionsData } = useQuery({ queryKey: ['instructions'], queryFn: () => getInstructions() });
 
   const createMutation = useMutation({ mutationFn: createProduct, onSuccess: () => { queryClient.invalidateQueries({ queryKey: ['products'] }); setShowModal(false); } });
   const updateMutation = useMutation({ mutationFn: ({ id, data }: { id: string; data: any }) => updateProduct(id, data), onSuccess: () => { queryClient.invalidateQueries({ queryKey: ['products'] }); setShowModal(false); setEditingProduct(null); } });
@@ -74,13 +74,11 @@ export default function ProductsPage() {
       status: (formData.get('status') as string) || 'active',
     };
     
-    // Если это редактирование
     if (editingProduct?.id) {
       updateMutation.mutate({ id: editingProduct.id, data: productData });
       return;
     }
     
-    // Если это редактирование и выбраны коды для генерации
     if (productId && generateCodesChecked) {
       generateCodesMutation.mutate({
         productId,
@@ -90,7 +88,6 @@ export default function ProductsPage() {
         usageLimit: Number(formData.get('codesLimit')) || 1,
       });
     } else if (generateCodesChecked) {
-      // Создаём товар и затем генерируем коды
       const product = await createMutation.mutateAsync(productData);
       const productIdStr = String(product.data.id);
       generateCodesMutation.mutate({

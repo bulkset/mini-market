@@ -117,9 +117,8 @@ git clone https://github.com/your-repo/mini-market.git .
 ### 2. Настройка базы данных
 
 ```bash
-# База данных уже есть в проекте (backend/database.sqlite)
-# Если нужно, скопируйте её в правильное место
-cp backend/database.sqlite backend/database.sqlite.backup
+# База данных SQLite уже есть в проекте (backend/database.sqlite)
+# Файл будет создан автоматически при первом запуске
 ```
 
 ### 3. Настройка переменных окружения
@@ -142,8 +141,6 @@ DB_STORAGE=./database.sqlite
 JWT_SECRET=your-secret-key-change-in-production
 FRONTEND_URL=https://kabanstore.com
 ```
-
-**⚠️ ВАЖНО: Измените JWT_SECRET на безопасный ключ!**
 
 ### 4. Установка зависимостей бэкенда
 
