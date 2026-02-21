@@ -235,12 +235,11 @@ router.get('/products', async (req: AuthRequest, res: Response) => {
  */
 router.post('/products', async (req: AuthRequest, res: Response) => {
   try {
-    const { name, slug, categoryId, instructionTemplateId, description, shortDescription, type, instruction, status } = req.body;
+    const { name, categoryId, instructionTemplateId, description, shortDescription, type, instruction, status } = req.body;
     
     const product = await Product.create({
       id: uuidv4(),
       name,
-      slug: slug || name.toLowerCase().replace(/\s+/g, '-'),
       categoryId: categoryId || null,
       instructionTemplateId: instructionTemplateId || null,
       description,
@@ -248,7 +247,6 @@ router.post('/products', async (req: AuthRequest, res: Response) => {
       type: type || 'digital_file',
       instruction,
       status: status || 'active',
-      price: req.body.price || 0,
       isFeatured: req.body.isFeatured || false
     });
 
@@ -340,41 +338,6 @@ router.delete('/products/:id', async (req: AuthRequest, res: Response) => {
   } catch (error) {
     console.error('Delete product error:', error);
     res.status(500).json({ success: false, error: 'Ошибка удаления товара' });
-  }
-});
-
-/**
- * POST /api/v1/admin/products/:id/image
- * Загрузка изображения товара
- */
-router.post('/products/:id/image', upload.single('image'), async (req: AuthRequest, res: Response) => {
-  try {
-    const { id } = req.params;
-    
-    if (!req.file) {
-      return res.status(400).json({ success: false, error: 'Файл не загружен' });
-    }
-
-    const product = await Product.findByPk(id);
-    if (!product) {
-      return res.status(404).json({ success: false, error: 'Товар не найден' });
-    }
-
-    // Удаляем старое изображение если есть
-    if (product.imageUrl) {
-      const oldPath = path.join(process.cwd(), product.imageUrl);
-      if (fs.existsSync(oldPath)) {
-        fs.unlinkSync(oldPath);
-      }
-    }
-
-    const imageUrl = `/uploads/${req.file.filename}`;
-    await product.update({ imageUrl });
-
-    res.json({ success: true, data: { imageUrl } });
-  } catch (error) {
-    console.error('Upload image error:', error);
-    res.status(500).json({ success: false, error: 'Ошибка загрузки изображения' });
   }
 });
 
@@ -472,7 +435,7 @@ router.get('/codes', async (req: AuthRequest, res: Response) => {
       offset: (Number(page) - 1) * Number(limit),
       order: [['createdAt', 'DESC']],
       include: [
-        { model: Product, as: 'product', attributes: ['id', 'name', 'slug'] }
+        { model: Product, as: 'product', attributes: ['id', 'name'] }
       ]
     });
 

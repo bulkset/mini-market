@@ -173,36 +173,30 @@ Category.init(
 interface ProductAttributes {
   id: string;
   name: string;
-  slug: string;
   categoryId: string | null;
   description: string | null;
   shortDescription: string | null;
   type: string;
   instruction: string | null;
   instructionTemplateId: string | null;
-  imageUrl: string | null;
   status: string;
-  price: number;
   isFeatured: boolean;
   createdAt: Date;
   updatedAt: Date;
 }
 
-interface ProductCreationAttributes extends Optional<ProductAttributes, 'id' | 'categoryId' | 'description' | 'shortDescription' | 'instruction' | 'instructionTemplateId' | 'imageUrl' | 'status' | 'price' | 'isFeatured' | 'createdAt' | 'updatedAt'> {}
+interface ProductCreationAttributes extends Optional<ProductAttributes, 'id' | 'categoryId' | 'description' | 'shortDescription' | 'instruction' | 'instructionTemplateId' | 'status' | 'isFeatured' | 'createdAt' | 'updatedAt'> {}
 
 export class Product extends Model<ProductAttributes, ProductCreationAttributes> implements ProductAttributes {
   declare id: string;
   declare name: string;
-  declare slug: string;
   declare categoryId: string | null;
   declare description: string | null;
   declare shortDescription: string | null;
   declare type: string;
   declare instruction: string | null;
   declare instructionTemplateId: string | null;
-  declare imageUrl: string | null;
   declare status: string;
-  declare price: number;
   declare isFeatured: boolean;
   declare createdAt: Date;
   declare updatedAt: Date;
@@ -218,11 +212,6 @@ Product.init(
     name: {
       type: DataTypes.STRING(255),
       allowNull: false,
-    },
-    slug: {
-      type: DataTypes.STRING(255),
-      allowNull: false,
-      unique: true,
     },
     categoryId: {
       type: DataTypes.UUID,
@@ -251,18 +240,9 @@ Product.init(
       allowNull: true,
       field: 'instruction_template_id',
     },
-    imageUrl: {
-      type: DataTypes.STRING(500),
-      allowNull: true,
-      field: 'image_url',
-    },
     status: {
       type: DataTypes.STRING(50),
       defaultValue: 'active',
-    },
-    price: {
-      type: DataTypes.DECIMAL(10, 2),
-      defaultValue: 0,
     },
     isFeatured: {
       type: DataTypes.BOOLEAN,

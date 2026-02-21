@@ -10,7 +10,6 @@ export interface ActivationResult {
   product?: {
     id: string;
     name: string;
-    slug: string;
     description: string | null;
     shortDescription: string | null;
     type: string;
@@ -262,7 +261,6 @@ export async function activateCode(code: string, userIp: string, userAgent?: str
       product: {
         id: product.id,
         name: product.name,
-        slug: product.slug,
         description: product.description,
         shortDescription: product.shortDescription,
         type: product.type,
@@ -409,7 +407,7 @@ export async function exportCodes(productId?: string, status?: string): Promise<
       {
         model: Product,
         as: 'product',
-        attributes: ['id', 'name', 'slug']
+        attributes: ['id', 'name']
       }
     ],
     order: [['createdAt', 'DESC']]

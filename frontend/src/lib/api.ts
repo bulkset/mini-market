@@ -147,7 +147,6 @@ export async function getProduct(id: string) {
 
 export async function createProduct(data: {
   name: string;
-  slug?: string;
   categoryId?: string;
   instructionTemplateId?: string;
   description?: string;
@@ -155,7 +154,6 @@ export async function createProduct(data: {
   type?: string;
   instruction?: string;
   status?: string;
-  price?: number;
   isFeatured?: boolean;
 }) {
   const response = await api.post('/admin/products', data);
@@ -164,7 +162,6 @@ export async function createProduct(data: {
 
 export async function updateProduct(id: string, data: Partial<{
   name: string;
-  slug: string;
   categoryId: string;
   instructionTemplateId: string;
   description: string;
@@ -172,7 +169,6 @@ export async function updateProduct(id: string, data: Partial<{
   type: string;
   instruction: string;
   status: string;
-  price: number;
   isFeatured: boolean;
 }>) {
   const response = await api.put(`/admin/products/${id}`, data);
@@ -181,15 +177,6 @@ export async function updateProduct(id: string, data: Partial<{
 
 export async function deleteProduct(id: string) {
   const response = await api.delete(`/admin/products/${id}`);
-  return response.data;
-}
-
-export async function uploadProductImage(productId: string, file: File) {
-  const formData = new FormData();
-  formData.append('image', file);
-  const response = await api.post(`/admin/products/${productId}/image`, formData, {
-    headers: { 'Content-Type': 'multipart/form-data' },
-  });
   return response.data;
 }
 
