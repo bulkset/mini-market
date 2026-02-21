@@ -173,29 +173,33 @@ Category.init(
 interface ProductAttributes {
   id: string;
   name: string;
+  slug: string;
   categoryId: string | null;
   description: string | null;
   shortDescription: string | null;
   type: string;
   instruction: string | null;
   instructionTemplateId: string | null;
+  imageUrl: string | null;
   status: string;
   isFeatured: boolean;
   createdAt: Date;
   updatedAt: Date;
 }
 
-interface ProductCreationAttributes extends Optional<ProductAttributes, 'id' | 'categoryId' | 'description' | 'shortDescription' | 'instruction' | 'instructionTemplateId' | 'status' | 'isFeatured' | 'createdAt' | 'updatedAt'> {}
+interface ProductCreationAttributes extends Optional<ProductAttributes, 'id' | 'slug' | 'categoryId' | 'description' | 'shortDescription' | 'instruction' | 'instructionTemplateId' | 'imageUrl' | 'status' | 'isFeatured' | 'createdAt' | 'updatedAt'> {}
 
 export class Product extends Model<ProductAttributes, ProductCreationAttributes> implements ProductAttributes {
   declare id: string;
   declare name: string;
+  declare slug: string;
   declare categoryId: string | null;
   declare description: string | null;
   declare shortDescription: string | null;
   declare type: string;
   declare instruction: string | null;
   declare instructionTemplateId: string | null;
+  declare imageUrl: string | null;
   declare status: string;
   declare isFeatured: boolean;
   declare createdAt: Date;
@@ -212,6 +216,12 @@ Product.init(
     name: {
       type: DataTypes.STRING(255),
       allowNull: false,
+    },
+    slug: {
+      type: DataTypes.STRING(255),
+      allowNull: false,
+      unique: true,
+      field: 'slug',
     },
     categoryId: {
       type: DataTypes.UUID,
@@ -277,6 +287,7 @@ interface InstructionTemplateAttributes {
   name: string;
   productId: string | null;
   content: string | null;
+  type: string;
   codeType: string | null;
   sortOrder: number;
   isActive: boolean;
@@ -284,13 +295,14 @@ interface InstructionTemplateAttributes {
   updatedAt: Date;
 }
 
-interface InstructionTemplateCreationAttributes extends Optional<InstructionTemplateAttributes, 'id' | 'productId' | 'content' | 'codeType' | 'sortOrder' | 'isActive' | 'createdAt' | 'updatedAt'> {}
+interface InstructionTemplateCreationAttributes extends Optional<InstructionTemplateAttributes, 'id' | 'productId' | 'content' | 'type' | 'codeType' | 'sortOrder' | 'isActive' | 'createdAt' | 'updatedAt'> {}
 
 export class InstructionTemplate extends Model<InstructionTemplateAttributes, InstructionTemplateCreationAttributes> implements InstructionTemplateAttributes {
   declare id: string;
   declare name: string;
   declare productId: string | null;
   declare content: string | null;
+  declare type: string;
   declare codeType: string | null;
   declare sortOrder: number;
   declare isActive: boolean;
@@ -317,6 +329,11 @@ InstructionTemplate.init(
     content: {
       type: DataTypes.TEXT('long'),
       allowNull: true,
+    },
+    type: {
+      type: DataTypes.STRING(50),
+      defaultValue: 'simple',
+      field: 'type',
     },
     codeType: {
       type: DataTypes.STRING(100),

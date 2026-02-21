@@ -65,6 +65,7 @@ export default function InstructionsPage() {
     const data = {
       title: formData.get('title') as string,
       content: formData.get('content') as string,
+      type: formData.get('type') as string || 'simple',
       sortOrder: Number(formData.get('sortOrder')) || 0,
       isActive: formData.get('isActive') === 'on',
     };
@@ -152,7 +153,8 @@ export default function InstructionsPage() {
             </div>
             <form onSubmit={handleSubmit} className="p-6 space-y-4">
               <div><label className="block text-sm font-medium mb-2 text-gray-300">Название *</label><input name="title" required defaultValue={editingInstruction?.title} className="w-full px-4 py-3 bg-gray-800 border border-gray-700 rounded-xl text-white" /></div>
-              <div><label className="block text-sm font-medium mb-2 text-gray-300">Содержание (Markdown)</label><textarea name="content" rows={8} defaultValue={editingInstruction?.content} className="w-full px-4 py-3 bg-gray-800 border border-gray-700 rounded-xl text-white font-mono text-sm" /></div>
+              <div><label className="block text-sm font-medium mb-2 text-gray-300">Тип инструкции</label><select name="type" defaultValue={editingInstruction?.type || 'simple'} className="w-full px-4 py-3 bg-gray-800 border border-gray-700 rounded-xl text-white"><option value="simple">Простая</option><option value="steps">Пошаговая (слайды)</option></select></div>
+              <div><label className="block text-sm font-medium mb-2 text-gray-300">Содержание (Markdown){' '}<span className="text-gray-500 text-xs">(для пошаговой используй --- для разделения шагов)</span></label><textarea name="content" rows={8} defaultValue={editingInstruction?.content} placeholder="Для пошаговой инструкции разделяй шаги через --- например:&#10;Первый шаг&#10;---&#10;Второй шаг" className="w-full px-4 py-3 bg-gray-800 border border-gray-700 rounded-xl text-white font-mono text-sm" /></div>
               <div><label className="block text-sm font-medium mb-2 text-gray-300">Сортировка</label><input name="sortOrder" type="number" defaultValue={editingInstruction?.sortOrder || 0} className="w-full px-4 py-3 bg-gray-800 border border-gray-700 rounded-xl text-white" /></div>
               <div className="flex items-center gap-2">
                 <input type="checkbox" id="isActive" name="isActive" defaultChecked={editingInstruction?.isActive !== false} className="w-4 h-4 rounded bg-gray-800 border-gray-600 text-indigo-600" />

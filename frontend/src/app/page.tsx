@@ -3,7 +3,7 @@
 import { useState, useEffect } from 'react';
 import { useMutation } from '@tanstack/react-query';
 import { activateCode, getPublicSettings } from '@/lib/api';
-import { Loader2, Key, Download, FileText, AlertCircle, CheckCircle } from 'lucide-react';
+import { Loader2, Key, Download, FileText, AlertCircle, CheckCircle, ChevronLeft, ChevronRight } from 'lucide-react';
 import ReactMarkdown from 'react-markdown';
 
 export default function Home() {
@@ -11,6 +11,7 @@ export default function Home() {
   const [product, setProduct] = useState<any>(null);
   const [error, setError] = useState('');
   const [storeName, setStoreName] = useState('KABAN STORE');
+  const [currentSlide, setCurrentSlide] = useState(0);
 
   useEffect(() => {
     // Загрузка настроек магазина
@@ -31,6 +32,7 @@ export default function Home() {
       if (data.success) {
         setProduct(data.data);
         setError('');
+        setCurrentSlide(0); // Сброс слайда при новой активации
       } else {
         setError(data.error || 'Ошибка активации');
         setProduct(null);
@@ -137,23 +139,57 @@ export default function Home() {
                 )}
               </div>
 
-              {product.description && (
-                <div className="p-4 bg-gray-800/50 rounded-xl">
-                  <p className="text-gray-300">{product.description}</p>
-                </div>
-              )}
-
               {/* Instruction */}
               {(product.instruction || product.description) && (
                 <div>
                   <h3 className="text-sm font-medium text-gray-400 mb-2">Инструкция</h3>
-                  <div 
-                    className="prose prose-invert prose-sm max-w-none p-4 bg-gray-800/50 rounded-xl"
-                  >
-                    <ReactMarkdown>
-                      {product.instruction || product.description || ''}
-                    </ReactMarkdown>
-                  </div>
+                  {(product.instructionType === 'steps' || (product.instruction && product.instruction.includes('---'))) ? (
+                    // Пошаговая инструкция (слайды)
+                    <div className="bg-gray-800/50 rounded-xl overflow-hidden">
+                      {(() => {
+                        const content = product.instruction || product.description || '';
+                        const steps = content.split(/---/g).map((s: string) => s.trim()).filter((s: string) => s);
+                        const currentStep = steps[currentSlide] || '';
+                        return (
+                          <div>
+                            <div className="p-4 min-h-[150px]">
+                              <ReactMarkdown>{currentStep}</ReactMarkdown>
+                            </div>
+                            {steps.length > 1 && (
+                              <div className="flex items-center justify-between p-4 border-t border-gray-700">
+                                <button
+                                  onClick={() => setCurrentSlide(Math.max(0, currentSlide - 1))}
+                                  disabled={currentSlide === 0}
+                                  className="flex items-center gap-2 px-4 py-2 bg-gray-700 hover:bg-gray-600 disabled:opacity-50 disabled:cursor-not-allowed rounded-lg text-white"
+                                >
+                                  <ChevronLeft className="w-4 h-4" />
+                                  Назад
+                                </button>
+                                <span className="text-sm text-gray-400">
+                                  {currentSlide + 1} / {steps.length}
+                                </span>
+                                <button
+                                  onClick={() => setCurrentSlide(Math.min(steps.length - 1, currentSlide + 1))}
+                                  disabled={currentSlide === steps.length - 1}
+                                  className="flex items-center gap-2 px-4 py-2 bg-indigo-600 hover:bg-indigo-700 disabled:opacity-50 disabled:cursor-not-allowed rounded-lg text-white"
+                                >
+                                  Далее
+                                  <ChevronRight className="w-4 h-4" />
+                                </button>
+                              </div>
+                            )}
+                          </div>
+                        );
+                      })()}
+                    </div>
+                  ) : (
+                    // Простая инструкция
+                    <div className="prose prose-invert prose-sm max-w-none p-4 bg-gray-800/50 rounded-xl">
+                      <ReactMarkdown>
+                        {product.instruction || product.description || ''}
+                      </ReactMarkdown>
+                    </div>
+                  )}
                 </div>
               )}
 

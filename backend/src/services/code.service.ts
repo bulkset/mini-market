@@ -42,6 +42,7 @@ export interface ActivationResult {
     shortDescription: string | null;
     type: string;
     instruction: string | null;
+    instructionType?: string;
     files: Array<{
       id: string;
       fileName: string;
@@ -294,6 +295,11 @@ export async function activateCode(code: string, userIp: string, userAgent?: str
       instruction = product.instructionTemplate.content;
     }
     
+    // ВСЕГДА используем описание как запасной вариант для инструкции (только если ничего не нашли)
+    if (!instruction && product.description) {
+      instruction = product.description;
+    }
+    
     console.log('DEBUG - FINAL instruction:', instruction);
 
     // Применение метаданных кода к инструкции (уникальный контент)
@@ -326,6 +332,17 @@ export async function activateCode(code: string, userIp: string, userAgent?: str
     await recordSuccessAttempt(userIp);
 
     // 12. Формирование ответа
+    // Получаем тип инструкции
+    let instructionType = 'simple';
+    if (product.instructionTemplate && product.instructionTemplate.type) {
+      instructionType = product.instructionTemplate.type;
+    } else if (product.instructionTemplates && product.instructionTemplates.length > 0) {
+      const activeTemplate = product.instructionTemplates.find((t: any) => t.isActive);
+      if (activeTemplate && activeTemplate.type) {
+        instructionType = activeTemplate.type;
+      }
+    }
+    
     return {
       success: true,
       product: {
@@ -335,6 +352,7 @@ export async function activateCode(code: string, userIp: string, userAgent?: str
         shortDescription: product.shortDescription,
         type: product.type,
         instruction,
+        instructionType,
         files: product.files ? product.files.map((f: any) => ({
           id: f.id,
           fileName: f.fileName,

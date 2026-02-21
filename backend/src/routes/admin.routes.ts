@@ -237,11 +237,24 @@ router.post('/products', async (req: AuthRequest, res: Response) => {
   try {
     const { name, categoryId, instructionTemplateId, description, shortDescription, type, instruction, status } = req.body;
     
+    // Преобразуем пустые строки в null
+    const catId = categoryId && categoryId.trim() ? categoryId : null;
+    const instTplId = instructionTemplateId && instructionTemplateId.trim() ? instructionTemplateId : null;
+    
+    // Генерируем slug из названия
+    const slug = name
+      .toLowerCase()
+      .replace(/[^а-яa-z0-9]+/g, '-')
+      .replace(/^-|-$/g, '') + '-' + Date.now();
+    
+    console.log('Creating product with:', { name, slug, catId, instTplId, description, shortDescription, type, instruction, status });
+    
     const product = await Product.create({
       id: uuidv4(),
       name,
-      categoryId: categoryId || null,
-      instructionTemplateId: instructionTemplateId || null,
+      slug,
+      categoryId: catId,
+      instructionTemplateId: instTplId,
       description,
       shortDescription,
       type: type || 'digital_file',
@@ -261,8 +274,9 @@ router.post('/products', async (req: AuthRequest, res: Response) => {
     });
 
     res.status(201).json({ success: true, data: product });
-  } catch (error) {
-    res.status(500).json({ success: false, error: 'Ошибка создания товара' });
+  } catch (error: any) {
+    console.error('Product creation error:', error);
+    res.status(500).json({ success: false, error: 'Ошибка создания товара: ' + (error.message || 'Unknown error') });
   }
 });
 
@@ -837,12 +851,13 @@ router.get('/instructions', async (req: AuthRequest, res: Response) => {
  */
 router.post('/instructions', async (req: AuthRequest, res: Response) => {
   try {
-    const { title, content, sortOrder, isActive } = req.body;
+    const { title, content, type, sortOrder, isActive } = req.body;
     
     const instruction = await InstructionTemplate.create({
       id: uuidv4(),
       name: title,
       content,
+      type: type || 'simple',
       sortOrder: sortOrder || 0,
       isActive: isActive !== false
     });
