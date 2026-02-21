@@ -108,7 +108,7 @@ router.post('/categories', async (req: AuthRequest, res: Response) => {
       action: 'create',
       entityType: 'category',
       entityId: category.id,
-      newData: category.toJSON(),
+      newData: category.toJSON() as unknown as Record<string, unknown>,
       ipAddress: req.ip || undefined
     });
 
@@ -131,7 +131,7 @@ router.put('/categories/:id', async (req: AuthRequest, res: Response) => {
       return res.status(404).json({ success: false, error: 'Категория не найдена' });
     }
 
-    const oldData = category.toJSON();
+    const oldData = category.toJSON() as unknown as Record<string, unknown>;
     await category.update(req.body);
 
     await AdminLog.create({
@@ -141,7 +141,7 @@ router.put('/categories/:id', async (req: AuthRequest, res: Response) => {
       entityType: 'category',
       entityId: id,
       oldData,
-      newData: category.toJSON(),
+      newData: category.toJSON() as unknown as Record<string, unknown>,
       ipAddress: req.ip || undefined
     });
 
@@ -172,7 +172,7 @@ router.delete('/categories/:id', async (req: AuthRequest, res: Response) => {
       action: 'delete',
       entityType: 'category',
       entityId: id,
-      oldData: category.toJSON(),
+      oldData: category.toJSON() as unknown as Record<string, unknown>,
       ipAddress: req.ip || undefined
     });
 
@@ -269,7 +269,7 @@ router.post('/products', async (req: AuthRequest, res: Response) => {
       action: 'create',
       entityType: 'product',
       entityId: product.id,
-      newData: product.toJSON(),
+      newData: product.toJSON() as unknown as Record<string, unknown>,
       ipAddress: req.ip || undefined
     });
 
@@ -293,7 +293,7 @@ router.put('/products/:id', async (req: AuthRequest, res: Response) => {
       return res.status(404).json({ success: false, error: 'Товар не найден' });
     }
 
-    const oldData = product.toJSON();
+    const oldData = product.toJSON() as unknown as Record<string, unknown>;
     await product.update(req.body);
 
     await AdminLog.create({
@@ -303,7 +303,7 @@ router.put('/products/:id', async (req: AuthRequest, res: Response) => {
       entityType: 'product',
       entityId: id,
       oldData,
-      newData: product.toJSON(),
+      newData: product.toJSON() as unknown as Record<string, unknown>,
       ipAddress: req.ip || undefined
     });
 
@@ -882,7 +882,7 @@ router.put('/instructions/:id', async (req: AuthRequest, res: Response) => {
       return res.status(404).json({ success: false, error: 'Инструкция не найдена' });
     }
 
-    const oldData = instruction.toJSON();
+    const oldData = instruction.toJSON() as unknown as Record<string, unknown>;
     // Поддержка как title так и name для обратной совместимости
     const updateData = { ...req.body };
     if (updateData.title && !updateData.name) {
@@ -897,7 +897,7 @@ router.put('/instructions/:id', async (req: AuthRequest, res: Response) => {
       entityType: 'instruction',
       entityId: id,
       oldData,
-      newData: instruction.toJSON(),
+      newData: instruction.toJSON() as unknown as Record<string, unknown>,
       ipAddress: req.ip || undefined
     });
 
@@ -928,7 +928,7 @@ router.delete('/instructions/:id', async (req: AuthRequest, res: Response) => {
       action: 'delete',
       entityType: 'instruction',
       entityId: id,
-      oldData: instruction.toJSON(),
+      oldData: instruction.toJSON() as unknown as Record<string, unknown>,
       ipAddress: req.ip || undefined
     });
 

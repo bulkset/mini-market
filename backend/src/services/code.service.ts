@@ -40,6 +40,7 @@ export interface ActivationResult {
     name: string;
     description: string | null;
     shortDescription: string | null;
+    imageUrl: string | null;
     type: string;
     instruction: string | null;
     instructionType?: string;

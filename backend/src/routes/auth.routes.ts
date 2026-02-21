@@ -57,13 +57,13 @@ router.post('/login', async (req: Request, res: Response) => {
     const accessToken = jwt.sign(
       { id: user.id, email: user.email, role: user.role },
       config.jwt.secret,
-      { expiresIn: config.jwt.expiresIn }
+      { expiresIn: config.jwt.expiresIn as jwt.SignOptions['expiresIn'] }
     );
 
     const refreshToken = jwt.sign(
       { id: user.id },
       config.jwt.refreshSecret,
-      { expiresIn: config.jwt.refreshExpiresIn }
+      { expiresIn: config.jwt.refreshExpiresIn as jwt.SignOptions['expiresIn'] }
     );
 
     return res.status(200).json({
@@ -121,7 +121,7 @@ router.post('/refresh', async (req: Request, res: Response) => {
     const accessToken = jwt.sign(
       { id: user.id, email: user.email, role: user.role },
       config.jwt.secret,
-      { expiresIn: config.jwt.expiresIn }
+      { expiresIn: config.jwt.expiresIn as jwt.SignOptions['expiresIn'] }
     );
 
     return res.status(200).json({
