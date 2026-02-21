@@ -8,6 +8,7 @@ import { testConnection, syncDatabase } from './db/connection.js';
 import { activateCodeHandler, checkCodeStatusHandler } from './controllers/activation.controller.js';
 import { authRoutes } from './routes/auth.routes.js';
 import { adminRoutes } from './routes/admin.routes.js';
+import { Setting } from './db/models/index.js';
 
 const app: Express = express();
 
@@ -54,6 +55,26 @@ app.use(express.urlencoded({ extended: true }));
 // API v1
 app.post('/api/v1/activate', activateCodeHandler);
 app.get('/api/v1/activate/status/:code', checkCodeStatusHandler);
+
+// Публичные настройки магазина
+app.get('/api/v1/settings', async (req: Request, res: Response) => {
+  try {
+    const settings = await Setting.findAll();
+    const settingsObj = settings.reduce((acc: any, s) => {
+      acc[s.key] = s.value;
+      return acc;
+    }, {});
+    res.json({ 
+      success: true, 
+      data: {
+        store_name: settingsObj.store_name || 'KABAN STORE',
+        store_description: settingsObj.store_description || ''
+      }
+    });
+  } catch (error) {
+    res.status(500).json({ success: false, error: 'Ошибка загрузки настроек' });
+  }
+});
 
 // Статические файлы (загруженные)
 app.use('/uploads', express.static(config.upload.dir));

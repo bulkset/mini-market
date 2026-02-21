@@ -6,8 +6,12 @@ import { Providers } from './providers';
 const inter = Inter({ subsets: ['latin', 'cyrillic'] });
 
 export const metadata: Metadata = {
-  title: 'Mini Market - Система активационных кодов',
+  title: 'KABAN STORE - Система активационных кодов',
   description: 'Получите доступ к цифровым товарам по активационному коду',
+  icons: {
+    icon: '/logo.png',
+    apple: '/logo.png',
+  },
 };
 
 export default function RootLayout({

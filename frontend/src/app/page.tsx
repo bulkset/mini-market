@@ -1,18 +1,33 @@
 'use client';
 
-import { useState } from 'react';
+import { useState, useEffect } from 'react';
 import { useMutation } from '@tanstack/react-query';
-import { activateCode } from '@/lib/api';
-import { Loader2, Key, Download, FileText, AlertCircle, CheckCircle, Gift } from 'lucide-react';
+import { activateCode, getPublicSettings } from '@/lib/api';
+import { Loader2, Key, Download, FileText, AlertCircle, CheckCircle } from 'lucide-react';
+import ReactMarkdown from 'react-markdown';
 
 export default function Home() {
   const [code, setCode] = useState('');
   const [product, setProduct] = useState<any>(null);
   const [error, setError] = useState('');
+  const [storeName, setStoreName] = useState('KABAN STORE');
+
+  useEffect(() => {
+    // Загрузка настроек магазина
+    getPublicSettings().then((data) => {
+      if (data.success && data.data) {
+        if (data.data.store_name) setStoreName(data.data.store_name);
+      }
+    }).catch(console.error);
+  }, []);
 
   const mutation = useMutation({
     mutationFn: (code: string) => activateCode(code),
     onSuccess: (data) => {
+      console.log('Frontend - Activation response:', data);
+      console.log('Frontend - product.instruction:', data.data?.instruction);
+      console.log('Frontend - product.description:', data.data?.description);
+      console.log('Frontend - product.type:', data.data?.type);
       if (data.success) {
         setProduct(data.data);
         setError('');
@@ -42,10 +57,8 @@ export default function Home() {
         <div className="max-w-6xl mx-auto px-6 py-8">
           <div className="flex items-center justify-between">
             <div className="flex items-center gap-3">
-              <div className="w-10 h-10 bg-indigo-600 rounded-xl flex items-center justify-center">
-                <Gift className="w-5 h-5 text-white" />
-              </div>
-              <span className="text-xl font-semibold">Mini Market</span>
+              <img src="/logo.png" alt="Logo" className="w-10 h-10 rounded-xl object-cover" />
+              <span className="text-xl font-semibold">{storeName}</span>
             </div>
           </div>
         </div>
@@ -131,13 +144,16 @@ export default function Home() {
               )}
 
               {/* Instruction */}
-              {product.instruction && (
+              {(product.instruction || product.description) && (
                 <div>
                   <h3 className="text-sm font-medium text-gray-400 mb-2">Инструкция</h3>
                   <div 
                     className="prose prose-invert prose-sm max-w-none p-4 bg-gray-800/50 rounded-xl"
-                    dangerouslySetInnerHTML={{ __html: product.instruction }}
-                  />
+                  >
+                    <ReactMarkdown>
+                      {product.instruction || product.description || ''}
+                    </ReactMarkdown>
+                  </div>
                 </div>
               )}
 
@@ -181,7 +197,7 @@ export default function Home() {
       {/* Footer */}
       <footer className="border-t border-gray-800 py-8">
         <div className="max-w-6xl mx-auto px-6 text-center text-gray-500 text-sm">
-          © 2024 Mini Market
+          © 2024 KABAN STORE
         </div>
       </footer>
     </div>

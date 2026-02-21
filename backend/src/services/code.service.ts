@@ -1,8 +1,36 @@
 import { Op } from 'sequelize';
 import bcrypt from 'bcryptjs';
 import { v4 as uuidv4 } from 'uuid';
-import { ActivationCode, Activation, Product, ProductFile, InstructionTemplate, CodeAttempt } from '../db/models/index.js';
+import { ActivationCode, Activation, Product, ProductFile, InstructionTemplate, CodeAttempt, Setting } from '../db/models/index.js';
 import { config } from '../config/index.js';
+
+// Кэш настроек
+let settingsCache: Record<string, any> = {};
+let settingsCacheTime = 0;
+const SETTINGS_CACHE_TTL = 60000; // 1 минута
+
+/**
+ * Получение настроек из базы данных
+ */
+async function getSettings(): Promise<Record<string, any>> {
+  const now = Date.now();
+  if (settingsCache && (now - settingsCacheTime) < SETTINGS_CACHE_TTL) {
+    return settingsCache;
+  }
+  
+  try {
+    const settings = await Setting.findAll();
+    settingsCache = settings.reduce((acc: any, s) => {
+      acc[s.key] = s.value;
+      return acc;
+    }, {});
+    settingsCacheTime = now;
+  } catch (error) {
+    console.error('Error loading settings:', error);
+  }
+  
+  return settingsCache;
+}
 
 export interface ActivationResult {
   success: boolean;
@@ -35,7 +63,10 @@ export interface CodeValidationResult {
  * Проверка на блокировку IP (защита от brute-force)
  */
 export async function checkIpBlocked(ip: string): Promise<CodeValidationResult> {
-  const { max, windowMinutes, blockDurationMinutes } = config.security.codeAttempts;
+  const settings = await getSettings();
+  const max = parseInt(settings.max_attempts) || config.security.codeAttempts.max;
+  const windowMinutes = parseInt(settings.max_attempts_window_minutes) || config.security.codeAttempts.windowMinutes;
+  const blockDurationMinutes = parseInt(settings.block_duration_minutes) || config.security.codeAttempts.blockDurationMinutes;
   
   // Ищем последнюю попытку для этого IP
   const lastAttempt = await CodeAttempt.findOne({
@@ -93,10 +124,13 @@ export async function checkIpBlocked(ip: string): Promise<CodeValidationResult> 
  * Запись неудачной попытки
  */
 export async function recordFailedAttempt(ip: string, codeHash?: string): Promise<void> {
+  const settings = await getSettings();
+  const windowMinutes = parseInt(settings.max_attempts_window_minutes) || config.security.codeAttempts.windowMinutes;
+  
   const existing = await CodeAttempt.findOne({
     where: {
       ipAddress: ip,
-      createdAt: { [Op.gt]: new Date(Date.now() - config.security.codeAttempts.windowMinutes * 60 * 1000) }
+      createdAt: { [Op.gt]: new Date(Date.now() - windowMinutes * 60 * 1000) }
     },
     order: [['createdAt', 'DESC']]
   });
@@ -173,6 +207,14 @@ export async function activateCode(code: string, userIp: string, userAgent?: str
       ]
     });
 
+    // Если есть instructionTemplateId, загружаем его отдельно
+    if (activationCode && (activationCode as any).product && (activationCode as any).product.instructionTemplateId) {
+      const instructionTemplate = await InstructionTemplate.findByPk((activationCode as any).product.instructionTemplateId);
+      if (instructionTemplate) {
+        (activationCode as any).product.instructionTemplate = instructionTemplate;
+      }
+    }
+
     // 3. Проверка существования кода
     if (!activationCode) {
       await recordFailedAttempt(userIp);
@@ -217,14 +259,42 @@ export async function activateCode(code: string, userIp: string, userAgent?: str
 
     // 8. Выбор инструкции по типу кода
     let instruction = product.instruction;
+    
+    console.log('DEBUG - product.instruction:', instruction);
+    console.log('DEBUG - product.type:', product.type);
+    console.log('DEBUG - product.description:', product.description);
+    console.log('DEBUG - product.instructionTemplates (hasMany):', JSON.stringify(product.instructionTemplates));
+    console.log('DEBUG - product.instructionTemplate (belongsTo):', JSON.stringify(product.instructionTemplate));
+    console.log('DEBUG - activationCode.codeType:', activationCode.codeType);
+    
+    // Для текстовых инструкций используем описание, если инструкция не задана
+    if (!instruction && product.type === 'text_instruction') {
+      instruction = product.description;
+    }
+    
+    // Пробуем получить инструкцию из шаблонов (hasMany)
     if (product.instructionTemplates && product.instructionTemplates.length > 0) {
-      const template = product.instructionTemplates.find(
+      // Сначала ищем по codeType
+      let template = product.instructionTemplates.find(
         (t: any) => t.codeType === activationCode.codeType
       );
-      if (template) {
+      
+      // Если не нашли по codeType, используем первый попавшийся шаблон
+      if (!template) {
+        template = product.instructionTemplates.find((t: any) => t.isActive);
+      }
+      
+      if (template && template.content) {
         instruction = template.content;
       }
     }
+    
+    // Если инструкция всё ещё не найдена, пробуем из связи belongsTo
+    if (!instruction && product.instructionTemplate && product.instructionTemplate.content) {
+      instruction = product.instructionTemplate.content;
+    }
+    
+    console.log('DEBUG - FINAL instruction:', instruction);
 
     // Применение метаданных кода к инструкции (уникальный контент)
     if (activationCode.metadata && instruction) {
@@ -314,6 +384,13 @@ export async function generateCodes(
   codeType: string | null = null,
   createdBy: string | null = null
 ): Promise<string[]> {
+  // Получаем настройки по умолчанию
+  const settings = await getSettings();
+  const defaultExpiration = settings.default_expiration_days ? parseInt(settings.default_expiration_days) : config.security.defaultCodesExpirationDays;
+  
+  // Используем переданное значение или значение по умолчанию из настроек
+  const effectiveExpiresInDays = expiresInDays !== null ? expiresInDays : defaultExpiration;
+  
   const codes: string[] = [];
   const chars = 'ABCDEFGHJKLMNPQRSTUVWXYZ23456789'; // Без похожих символов
   
@@ -330,8 +407,8 @@ export async function generateCodes(
       continue;
     }
     
-    const expiresAt = expiresInDays 
-      ? new Date(Date.now() + expiresInDays * 24 * 60 * 60 * 1000)
+    const expiresAt = effectiveExpiresInDays 
+      ? new Date(Date.now() + effectiveExpiresInDays * 24 * 60 * 60 * 1000)
       : null;
     
     await ActivationCode.create({
@@ -434,12 +511,9 @@ export async function unblockCode(codeId: string): Promise<boolean> {
   
   if (!code) return false;
   
-  // Если код не был заблокирован навсегда, возвращаем active
-  // Если был заблокирован после использования, возвращаем used
-  const newStatus = code.usageCount > 0 ? 'used' : 'active';
-  
+  // При разблокировке всегда возвращаем статус 'active'
   const result = await ActivationCode.update(
-    { status: newStatus },
+    { status: 'active' },
     { where: { id: codeId } }
   );
   

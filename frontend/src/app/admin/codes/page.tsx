@@ -101,7 +101,7 @@ export default function CodesPage() {
         <div className="fixed inset-0 z-40 flex">
           <div className={clsx('fixed inset-0 z-50 flex flex-col w-72 bg-gradient-to-b from-indigo-600 to-purple-700 transition-transform', sidebarOpen ? 'translate-x-0' : '-translate-x-full')}>
             <div className="flex items-center justify-between h-20 px-6 border-b border-white/10">
-              <div><span className="text-2xl font-bold text-white">Mini Market</span><p className="text-xs text-white/70">Админ-панель</p></div>
+              <div><span className="text-2xl font-bold text-white">KABAN STORE</span><p className="text-xs text-white/70">Админ-панель</p></div>
               <button onClick={() => setSidebarOpen(false)} className="p-2 text-white/70"><X className="w-6 h-6" /></button>
             </div>
             <nav className="flex-1 px-4 py-6 space-y-2 overflow-y-auto">
@@ -115,7 +115,7 @@ export default function CodesPage() {
 
       <div className="hidden lg:fixed lg:inset-y-0 lg:flex lg:w-72 lg:flex-col">
         <div className="flex flex-col flex-1 bg-gradient-to-b from-indigo-600 to-purple-700">
-          <div className="flex items-center h-20 px-8 border-b border-white/10"><div><span className="text-2xl font-bold text-white">Mini Market</span><p className="text-xs text-white/70">Админ-панель</p></div></div>
+          <div className="flex items-center h-20 px-8 border-b border-white/10"><div><span className="text-2xl font-bold text-white">KABAN STORE</span><p className="text-xs text-white/70">Админ-панель</p></div></div>
           <nav className="flex-1 px-4 py-6 space-y-2">
             {navigation.map((item) => (<Link key={item.name} href={item.href} className={clsx('flex items-center gap-3 px-4 py-3 rounded-xl text-sm font-medium', currentPath === item.href ? 'bg-white/20 text-white' : 'text-white/80 hover:bg-white/10')}><item.icon className="w-5 h-5" />{item.name}</Link>))}
           </nav>

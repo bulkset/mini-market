@@ -66,6 +66,14 @@ export async function activateCode(code: string) {
   return response.data;
 }
 
+/**
+ * Получение публичных настроек магазина
+ */
+export async function getPublicSettings() {
+  const response = await api.get('/settings');
+  return response.data;
+}
+
 // =====================================================
 // АУТЕНТИФИКАЦИЯ
 // =====================================================

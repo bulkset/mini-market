@@ -219,7 +219,7 @@ INSERT OR IGNORE INTO categories (id, name, slug, description, sort_order) VALUE
 
 -- Настройки
 INSERT OR IGNORE INTO settings (id, key, value, description, category) VALUES
-('set-1', 'site_name', '"Mini Market"', 'Название сайта', 'general'),
+('set-1', 'site_name', '"KABAN STORE"', 'Название сайта', 'general'),
 ('set-2', 'site_description', '"Система активационных кодов"', 'Описание сайта', 'general'),
 ('set-3', 'dark_mode_enabled', 'true', 'Включена ли тёмная тема', 'general'),
 ('set-4', 'max_attempts', '5', 'Максимальное количество попыток ввода кода', 'security'),

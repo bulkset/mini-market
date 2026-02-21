@@ -227,7 +227,7 @@ INSERT INTO categories (name, slug, description, sort_order) VALUES
 
 -- Настройки
 INSERT INTO settings (key, value, description, category) VALUES
-('site_name', '"Mini Market"', 'Название сайта', 'general'),
+('site_name', '"KABAN STORE"', 'Название сайта', 'general'),
 ('site_description', '"Система активационных кодов"', 'Описание сайта', 'general'),
 ('dark_mode_enabled', 'true', 'Включена ли тёмная тема', 'general'),
 ('max_attempts', '5', 'Максимальное количество попыток ввода кода', 'security'),

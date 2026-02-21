@@ -42,7 +42,7 @@ export default function AdminLoginPage() {
               </div>
             </div>
             <h1 className="text-2xl font-bold text-white">
-              Mini Market
+              KABAN STORE
             </h1>
             <p className="text-white/80 text-sm mt-1">
               Админ-панель

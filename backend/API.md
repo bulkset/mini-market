@@ -379,7 +379,7 @@ EFGH5678,uuid,1,,standard
 Тело запроса:
 ```json
 {
-  "site_name": "Mini Market",
+  "site_name": "KABAN STORE",
   "dark_mode_enabled": true,
   "max_attempts": 5
 }

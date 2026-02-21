@@ -73,7 +73,7 @@ export default function AdminPage() {
           )}>
             <div className="flex items-center justify-between h-20 px-6 border-b border-white/10">
               <div>
-                <span className="text-2xl font-bold text-white">Mini Market</span>
+                <span className="text-2xl font-bold text-white">KABAN STORE</span>
                 <p className="text-xs text-white/70">Админ-панель</p>
               </div>
               <button
@@ -128,7 +128,7 @@ export default function AdminPage() {
         <div className="flex flex-col flex-1 bg-gradient-to-b from-indigo-600 to-purple-700">
           <div className="flex items-center h-20 px-8 border-b border-white/10">
             <div>
-              <span className="text-2xl font-bold text-white">Mini Market</span>
+              <span className="text-2xl font-bold text-white">KABAN STORE</span>
               <p className="text-xs text-white/70">Админ-панель</p>
             </div>
           </div>
@@ -174,7 +174,7 @@ export default function AdminPage() {
             <Menu className="w-6 h-6" />
           </button>
           <span className="text-lg font-semibold text-white">
-            Mini Market
+            KABAN STORE
           </span>
           <div className="w-10" />
         </div>
