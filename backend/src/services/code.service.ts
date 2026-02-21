@@ -261,13 +261,6 @@ export async function activateCode(code: string, userIp: string, userAgent?: str
     // 8. Выбор инструкции по типу кода
     let instruction = product.instruction;
     
-    console.log('DEBUG - product.instruction:', instruction);
-    console.log('DEBUG - product.type:', product.type);
-    console.log('DEBUG - product.description:', product.description);
-    console.log('DEBUG - product.instructionTemplates (hasMany):', JSON.stringify(product.instructionTemplates));
-    console.log('DEBUG - product.instructionTemplate (belongsTo):', JSON.stringify(product.instructionTemplate));
-    console.log('DEBUG - activationCode.codeType:', activationCode.codeType);
-    
     // Для текстовых инструкций используем описание, если инструкция не задана
     if (!instruction && product.type === 'text_instruction') {
       instruction = product.description;
@@ -299,8 +292,6 @@ export async function activateCode(code: string, userIp: string, userAgent?: str
     if (!instruction && product.description) {
       instruction = product.description;
     }
-    
-    console.log('DEBUG - FINAL instruction:', instruction);
 
     // Применение метаданных кода к инструкции (уникальный контент)
     if (activationCode.metadata && instruction) {
@@ -350,6 +341,7 @@ export async function activateCode(code: string, userIp: string, userAgent?: str
         name: product.name,
         description: product.description,
         shortDescription: product.shortDescription,
+        imageUrl: product.imageUrl,
         type: product.type,
         instruction,
         instructionType,

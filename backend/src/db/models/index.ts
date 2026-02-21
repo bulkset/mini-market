@@ -250,6 +250,11 @@ Product.init(
       allowNull: true,
       field: 'instruction_template_id',
     },
+    imageUrl: {
+      type: DataTypes.STRING(500),
+      allowNull: true,
+      field: 'image_url',
+    },
     status: {
       type: DataTypes.STRING(50),
       defaultValue: 'active',

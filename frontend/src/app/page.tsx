@@ -25,10 +25,6 @@ export default function Home() {
   const mutation = useMutation({
     mutationFn: (code: string) => activateCode(code),
     onSuccess: (data) => {
-      console.log('Frontend - Activation response:', data);
-      console.log('Frontend - product.instruction:', data.data?.instruction);
-      console.log('Frontend - product.description:', data.data?.description);
-      console.log('Frontend - product.type:', data.data?.type);
       if (data.success) {
         setProduct(data.data);
         setError('');
@@ -136,6 +132,14 @@ export default function Home() {
                 <h2 className="text-2xl font-bold">{product.name}</h2>
                 {product.shortDescription && (
                   <p className="text-gray-400 mt-1">{product.shortDescription}</p>
+                )}
+                {product.imageUrl && (
+                  <img src={product.imageUrl} alt={product.name} className="mt-4 rounded-xl w-full max-h-64 object-cover" />
+                )}
+                {product.description && (
+                  <div className="p-4 bg-gray-800/50 rounded-xl mt-4">
+                    <p className="text-gray-300">{product.description}</p>
+                  </div>
                 )}
               </div>
 

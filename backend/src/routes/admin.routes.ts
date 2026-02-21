@@ -235,11 +235,12 @@ router.get('/products', async (req: AuthRequest, res: Response) => {
  */
 router.post('/products', async (req: AuthRequest, res: Response) => {
   try {
-    const { name, categoryId, instructionTemplateId, description, shortDescription, type, instruction, status } = req.body;
+    const { name, categoryId, instructionTemplateId, imageUrl, description, shortDescription, type, instruction, status } = req.body;
     
     // Преобразуем пустые строки в null
     const catId = categoryId && categoryId.trim() ? categoryId : null;
     const instTplId = instructionTemplateId && instructionTemplateId.trim() ? instructionTemplateId : null;
+    const imgUrl = imageUrl && imageUrl.trim() ? imageUrl : null;
     
     // Генерируем slug из названия
     const slug = name
@@ -247,14 +248,13 @@ router.post('/products', async (req: AuthRequest, res: Response) => {
       .replace(/[^а-яa-z0-9]+/g, '-')
       .replace(/^-|-$/g, '') + '-' + Date.now();
     
-    console.log('Creating product with:', { name, slug, catId, instTplId, description, shortDescription, type, instruction, status });
-    
     const product = await Product.create({
       id: uuidv4(),
       name,
       slug,
       categoryId: catId,
       instructionTemplateId: instTplId,
+      imageUrl: imgUrl,
       description,
       shortDescription,
       type: type || 'digital_file',
