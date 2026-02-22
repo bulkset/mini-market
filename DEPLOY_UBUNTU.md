@@ -58,6 +58,25 @@ server {
     listen [::]:80;
     server_name kabanstore.com www.kabanstore.com;
 
+    # Статические файлы (загрузки) - проксируем на бэкенд
+    location /uploads/ {
+        proxy_pass http://localhost:3001/uploads/;
+        proxy_set_header Host $host;
+        proxy_set_header X-Real-IP $remote_addr;
+        proxy_set_header X-Forwarded-For $proxy_add_x_forwarded_for;
+        proxy_set_header X-Forwarded-Proto $scheme;
+    }
+
+    # Бэкенд (API)
+    location /api/ {
+        proxy_pass http://localhost:3001/api/;
+        proxy_http_version 1.1;
+        proxy_set_header Host $host;
+        proxy_set_header X-Real-IP $remote_addr;
+        proxy_set_header X-Forwarded-For $proxy_add_x_forwarded_for;
+        proxy_set_header X-Forwarded-Proto $scheme;
+    }
+
     # Фронтенд (Next.js)
     location / {
         proxy_pass http://localhost:3000;
@@ -69,22 +88,6 @@ server {
         proxy_set_header X-Real-IP $remote_addr;
         proxy_set_header X-Forwarded-For $proxy_add_x_forwarded_for;
         proxy_set_header X-Forwarded-Proto $scheme;
-    }
-
-    # Бэкенд (API)
-    location /api/ {
-        proxy_pass http://localhost:3001/api/;
-        proxy_set_header Host $host;
-        proxy_set_header X-Real-IP $remote_addr;
-        proxy_set_header X-Forwarded-For $proxy_add_x_forwarded_for;
-        proxy_set_header X-Forwarded-Proto $scheme;
-    }
-
-    # Статические файлы (загрузки)
-    location /uploads/ {
-        alias /var/www/kabanstore/backend/uploads/;
-        expires 30d;
-        add_header Cache-Control "public, immutable";
     }
 }
 ```
@@ -282,7 +285,7 @@ pm2 status
 
 ```bash
 # Тест бэкенда
-curl http://localhost:3001/health
+curl https://kabanstore.com/health
 
 # Тест фронтенда
 curl http://localhost:3000

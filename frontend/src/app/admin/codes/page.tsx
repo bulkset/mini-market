@@ -65,32 +65,27 @@ export default function CodesPage() {
     if (file) {
       const formData = new FormData();
       formData.append('file', file);
-      const token = localStorage.getItem('accessToken');
-      const response = await fetch('http://localhost:3001/api/v1/admin/codes/import', {
-        method: 'POST',
-        headers: { Authorization: `Bearer ${token}` },
-        body: formData,
-      });
-      if (response.ok) {
+      try {
+        await importCodes(file);
         queryClient.invalidateQueries({ queryKey: ['codes'] });
         setShowImportModal(false);
+      } catch (error) {
+        console.error('Import error:', error);
       }
     }
   };
 
   const handleExport = async () => {
-    const token = localStorage.getItem('accessToken');
-    const response = await fetch(`http://localhost:3001/api/v1/admin/codes/export?${status ? `status=${status}` : ''}`, {
-      headers: { Authorization: `Bearer ${token}` },
-    });
-    if (response.ok) {
-      const blob = await response.blob();
+    try {
+      const blob = await exportCodes(status ? { status } : undefined);
       const url = window.URL.createObjectURL(blob);
       const a = document.createElement('a');
       a.href = url;
       a.download = 'codes.csv';
       a.click();
       window.URL.revokeObjectURL(url);
+    } catch (error) {
+      console.error('Export error:', error);
     }
   };
 

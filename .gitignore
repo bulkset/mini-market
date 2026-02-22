@@ -1,0 +1,4 @@
+/frontend/.next
+/backend/dist
+/node_modules
+/node_modules/.bin

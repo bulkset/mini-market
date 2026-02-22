@@ -41,7 +41,7 @@ export const config = {
     defaultCodesExpirationDays: parseInt(process.env.DEFAULT_CODES_EXPIRATION_DAYS || '365', 10),
   },
 
-  frontendUrl: process.env.FRONTEND_URL || 'http://localhost:3000',
+  frontendUrl: process.env.FRONTEND_URL || 'https://kabanstore.com',
 
   log: {
     level: process.env.LOG_LEVEL || 'info',

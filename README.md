@@ -94,7 +94,7 @@ npm start
 ### 4. Доступ
 
 - **Пользовательская часть**: http://localhost:3000
-- **API**: http://localhost:3001
+- **API**: https://kabanstore.com
 - **Админ-панель**: http://localhost:3000/admin
 
 ## Создание администратора
@@ -102,7 +102,7 @@ npm start
 После первого запуска создайте администратора через API:
 
 ```bash
-curl -X POST http://localhost:3001/api/v1/auth/register \
+curl -X POST https://kabanstore.com/api/v1/auth/register \
   -H "Content-Type: application/json" \
   -d '{
     "email": "admin@example.com",
