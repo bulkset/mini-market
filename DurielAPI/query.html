@@ -1,0 +1,138 @@
+<!DOCTYPE html>
+<html lang="zh-CN">
+  <head>
+    <meta charset="UTF-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+    <title>卡密雪橇查询 - ChatGPT 圣诞版 🎄</title>
+    <link rel="icon" href="data:image/svg+xml,<svg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 100 100'><text y='80' font-size='80'>🎄</text></svg>" type="image/svg+xml">
+    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css" />
+    <link rel="preconnect" href="https://fonts.googleapis.com">
+    <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+    <link rel="preload" as="style" href="https://fonts.googleapis.com/css2?family=Poppins:wght@300;400;500;600;700&family=Mountains+of+Christmas:wght@400;700&family=ZCOOL+KuaiLe&display=block">
+    <link
+      href="https://fonts.googleapis.com/css2?family=Poppins:wght@300;400;500;600;700&family=Mountains+of+Christmas:wght@400;700&family=ZCOOL+KuaiLe&display=block"
+      rel="stylesheet"
+    />
+    <style>
+      /* 字体加载前隐藏内容，避免闪烁 */
+      html { visibility: hidden; }
+      html.fonts-loaded { visibility: visible; }
+    </style>
+    <link rel="stylesheet" href="css/styles.css" />
+    <link rel="stylesheet" href="css/snow-hills.css" />
+  </head>
+  <body>
+    <div class="snow-hills" aria-hidden="true"></div>
+    <!-- 飘雪效果 -->
+    <div class="snow-container" aria-hidden="true">
+      <div class="snowflake" style="left: 10%; animation-duration: 9s;">❄</div>
+      <div class="snowflake" style="left: 30%; animation-duration: 11s; animation-delay: 2s">❅</div>
+      <div class="snowflake" style="left: 60%; animation-duration: 7s; animation-delay: 1s">❆</div>
+      <div class="snowflake" style="left: 80%; animation-duration: 10s; animation-delay: 3s">❄</div>
+    </div>
+
+    <div class="container">
+      <header>
+        <div class="logo">
+           <div style="font-size: 48px; margin-bottom: 8px;">🛷</div>
+          <div>
+            <h1>卡密批量查询</h1>
+            <p class="subtitle">查看您的圣诞礼物卡状态 🎁</p>
+          </div>
+        </div>
+      </header>
+
+      <div class="content">
+        <div class="query-nav">
+          <a href="index.html">
+            <i class="fas fa-arrow-left"></i> 返回充值小屋
+          </a>
+        </div>
+
+        <div class="query-section">
+          <div class="form-group">
+            <label for="cardInput">输入卡密</label>
+            <textarea 
+              id="cardInput" 
+              placeholder="请输入卡密，支持批量 (每行一个)..."
+              rows="6"
+            ></textarea>
+            <div style="text-align:right; font-size:12px; color:#888; margin-top:4px;">
+              <span id="cardCount">0</span> 个卡密
+            </div>
+          </div>
+          
+          <div id="validationError" class="alert alert-error" style="display: none; margin-bottom:15px;"></div>
+          <div id="queryProgress" style="display: none; background: #e8f5e9; color: #2e7d32; padding:10px; border-radius:8px; margin-bottom:15px;"></div>
+          
+          <button class="btn" id="queryBtn" onclick="handleQuery()">
+            <i class="fas fa-search"></i> 查询状态
+          </button>
+        </div>
+
+        <div class="query-results" id="resultsSection" style="display: none; margin-top:20px;">
+          <div class="results-stats">
+            <div class="stat-item">
+              <span class="stat-label">总计</span>
+              <span class="stat-value" id="statTotal">0</span>
+            </div>
+            <div class="stat-item">
+              <span class="stat-label">已使用 (Coal)</span>
+              <span class="stat-value" id="statUsed" style="color:#616161">0</span>
+            </div>
+            <div class="stat-item" style="background:#e8f5e9; border-color:#c8e6c9;">
+              <span class="stat-label">未使用 (Holly)</span>
+              <span class="stat-value" id="statUnused" style="color:#2e7d32;">0</span>
+            </div>
+          </div>
+
+          <div class="results-tabs">
+            <button class="tab-btn active" data-filter="all" onclick="setFilter('all')">全部 (<span id="tabAllCount">0</span>)</button>
+            <button class="tab-btn" data-filter="used" onclick="setFilter('used')">已使用 (<span id="tabUsedCount">0</span>)</button>
+            <button class="tab-btn" data-filter="unused" onclick="setFilter('unused')">未使用 (<span id="tabUnusedCount">0</span>)</button>
+            <button class="tab-btn" onclick="copyResults()" style="margin-left:auto;"><i class="fas fa-copy"></i> 复制</button>
+          </div>
+          
+          <div class="results-table-wrapper">
+            <table class="results-table">
+              <thead>
+                <tr>
+                  <th>卡密</th>
+                  <th>状态</th>
+                  <th>充值账号</th>
+                  <th>时间</th>
+                </tr>
+              </thead>
+              <tbody id="resultsBody"></tbody>
+            </table>
+          </div>
+        </div>
+
+        <div id="loadingOverlay" style="display: none; text-align:center; padding:20px;">
+          <div style="font-size:32px; color:var(--xmas-red);"><i class="fas fa-snowflake fa-spin"></i></div>
+          <div style="color:#666; margin-top:10px;">查询中...</div>
+        </div>
+      </div>
+
+      <footer>
+        <p>© 2025 ChatGPT Recharge | Merry Christmas 🎄</p>
+      </footer>
+    </div>
+
+    <div class="toast" id="toast" style="display: none; position:fixed; bottom:20px; left:50%; transform:translateX(-50%); background:rgba(0,0,0,0.8); color:white; padding:10px 20px; border-radius:30px; z-index:2000;">
+      <i class="fas fa-check-circle"></i> <span id="toastMessage">复制成功</span>
+    </div>
+
+    <script src="js/query.js?v=20251227_2335"></script>
+    <script>
+      // 字体加载完成后显示页面
+      document.fonts.ready.then(() => {
+        document.documentElement.classList.add('fonts-loaded');
+      });
+      // 备用：超时后强制显示
+      setTimeout(() => {
+        document.documentElement.classList.add('fonts-loaded');
+      }, 1000);
+    </script>
+  </body>
+</html>

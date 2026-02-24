@@ -5,10 +5,11 @@ import morgan from 'morgan';
 import rateLimit from 'express-rate-limit';
 import { config } from './config/index.js';
 import { testConnection, syncDatabase } from './db/connection.js';
-import { activateCodeHandler, checkCodeStatusHandler } from './controllers/activation.controller.js';
+import { activateCodeHandler, checkCodeStatusHandler, rechargeWithTokenHandler, rechargeStatusHandler } from './controllers/activation.controller.js';
 import { authRoutes } from './routes/auth.routes.js';
 import { adminRoutes } from './routes/admin.routes.js';
 import { Setting } from './db/models/index.js';
+import { ChatGPTCDK } from './db/models/chatgpt-cdk.js';
 
 const app: Express = express();
 
@@ -36,7 +37,7 @@ if (config.nodeEnv === 'development') {
 
 const generalLimiter = rateLimit({
   windowMs: config.security.rateLimit.windowMs,
-  max: config.security.rateLimit.maxRequests,
+  max: 1000, // Увеличиваем лимит для всех
   message: { success: false, error: 'Слишком много запросов' }
 });
 app.use(generalLimiter);
@@ -51,6 +52,10 @@ app.use(express.urlencoded({ extended: true }));
 // API v1
 app.post('/api/v1/activate', activateCodeHandler);
 app.get('/api/v1/activate/status/:code', checkCodeStatusHandler);
+
+// API v1 - Активация с токеном (DurielAPI)
+app.post('/api/v1/activate/recharge', rechargeWithTokenHandler);
+app.get('/api/v1/activate/recharge/status/:taskId', rechargeStatusHandler);
 
 app.get('/api/v1/settings', async (req: Request, res: Response) => {
   try {
@@ -108,6 +113,14 @@ async function startServer() {
     }
 
     await syncDatabase();
+    
+    // Явно создаём таблицу ChatGPTCDK если не существует
+    try {
+      await ChatGPTCDK.sync({ force: false });
+      console.log('✓ Таблица ChatGPTCDK синхронизирована');
+    } catch (e: any) {
+      console.error('✗ Ошибка синхронизации ChatGPTCDK:', e.message);
+    }
 
     app.listen(config.port, () => {
       console.log(`✓ Сервер запущен на порту ${config.port}`);

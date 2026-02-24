@@ -15,6 +15,7 @@ const navigation = [
   { name: 'Товары', href: '/admin/products', icon: Package },
   { name: 'Инструкции', href: '/admin/instructions', icon: FileText },
   { name: 'Коды', href: '/admin/codes', icon: Key },
+  { name: 'ChatGPT CDK', href: '/admin/chatgpt-cdks', icon: Key },
   { name: 'Статистика', href: '/admin/stats', icon: BarChart3 },
   { name: 'Настройки', href: '/admin/settings', icon: Settings },
 ];

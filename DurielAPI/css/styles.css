@@ -1,0 +1,702 @@
+@import url('https://fonts.googleapis.com/css2?family=Roboto:wght@300;400;500;700&display=swap');
+
+* {
+  margin: 0;
+  padding: 0;
+  box-sizing: border-box;
+}
+
+:root {
+  --xmas-red: #d32f2f;
+  --xmas-dark-red: #b71c1c;
+  --xmas-green: #2e7d32;
+  --xmas-dark-green: #1b5e20;
+  --xmas-gold: #fbc02d;
+  --bg-color: #e3f2fd;
+}
+
+body {
+  font-family: 'ZCOOL KuaiLe', 'Roboto', sans-serif;
+  background: var(--bg-color);
+  background-image: 
+    radial-gradient(circle at 10% 20%, rgba(211, 47, 47, 0.08) 0%, transparent 25%),
+    radial-gradient(circle at 90% 80%, rgba(46, 125, 50, 0.08) 0%, transparent 25%),
+    radial-gradient(rgba(255, 255, 255, 0.6) 1.5px, transparent 1.5px),
+    radial-gradient(rgba(255, 255, 255, 0.6) 1.5px, transparent 1.5px),
+    linear-gradient(135deg, #dbeafe 0%, #e0e7ff 50%, #f3e8ff 100%);
+  background-size: 
+    100% 100%, 
+    100% 100%, 
+    30px 30px, 
+    30px 30px, 
+    100% 100%;
+  background-position: 
+    0 0, 
+    0 0, 
+    0 0, 
+    15px 15px, 
+    0 0;
+  background-attachment: fixed;
+  color: #212121;
+  min-height: 100vh;
+  padding: 8px;
+  display: flex;
+  justify-content: center;
+  align-items: center;
+  position: relative;
+  overflow-x: hidden;
+}
+
+/* --- 圣诞装饰元素 --- */
+.xmas-decorations {
+  position: fixed;
+  top: 0;
+  left: 0;
+  width: 100%;
+  height: 100%;
+  pointer-events: none;
+  z-index: 1;
+  overflow: hidden;
+}
+
+.deco {
+  position: absolute;
+  font-size: 48px;
+  opacity: 0.85;
+  filter: drop-shadow(2px 4px 6px rgba(0,0,0,0.2));
+  animation: float 6s ease-in-out infinite;
+}
+
+.deco-tree-left {
+  top: 15%;
+  left: 3%;
+  font-size: 72px;
+  opacity: 0.8;
+  animation-delay: 0s;
+}
+
+.deco-tree-right {
+  bottom: 10%;
+  right: 3%;
+  font-size: 64px;
+  opacity: 0.8;
+  animation-delay: 1s;
+}
+
+.deco-santa {
+  top: 8%;
+  right: 5%;
+  font-size: 56px;
+  animation-delay: 0.5s;
+}
+
+.deco-reindeer {
+  top: 35%;
+  left: 5%;
+  font-size: 44px;
+  animation-delay: 2s;
+}
+
+.deco-sleigh {
+  top: 25%;
+  right: 6%;
+  font-size: 40px;
+  animation-delay: 1.5s;
+}
+
+.deco-holly-left {
+  bottom: 35%;
+  left: 4%;
+  font-size: 36px;
+  animation-delay: 3s;
+}
+
+.deco-holly-right {
+  bottom: 38%;
+  left: 7%;
+  font-size: 28px;
+  animation-delay: 3.2s;
+}
+
+.deco-gift1 {
+  bottom: 15%;
+  left: 6%;
+  font-size: 42px;
+  animation-delay: 2.5s;
+}
+
+.deco-gift2 {
+  top: 55%;
+  right: 4%;
+  font-size: 38px;
+  animation-delay: 4s;
+}
+
+.deco-star {
+  top: 5%;
+  left: 8%;
+  font-size: 32px;
+  animation-delay: 1s;
+}
+
+.deco-bell {
+  bottom: 25%;
+  right: 5%;
+  font-size: 36px;
+  animation-delay: 2s;
+}
+
+.deco-candy {
+  top: 45%;
+  right: 7%;
+  font-size: 32px;
+  animation-delay: 3.5s;
+}
+
+.deco-snowman {
+  bottom: 5%;
+  left: 15%;
+  font-size: 50px;
+  animation-delay: 0.8s;
+}
+
+.deco-mistletoe {
+  top: 60%;
+  left: 3%;
+  font-size: 28px;
+  animation-delay: 4.5s;
+}
+
+.deco-chatgpt {
+  bottom: 20%;
+  right: 6%;
+  animation-delay: 1.2s;
+  opacity: 0.7;
+}
+
+/* --- Header Icons --- */
+.header-icons {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  gap: 8px;
+  margin-bottom: 6px;
+}
+
+.chatgpt-logo {
+  filter: drop-shadow(2px 2px 4px rgba(0,0,0,0.3));
+}
+
+@keyframes float {
+  0%, 100% { transform: translateY(0) rotate(0deg); }
+  50% { transform: translateY(-12px) rotate(3deg); }
+}
+
+/* 在小屏幕上隐藏装饰 */
+@media (max-width: 768px) {
+  .xmas-decorations { display: none; }
+}
+
+/* --- 飘雪动画 --- */
+.snow-container {
+  position: fixed;
+  top: 0;
+  left: 0;
+  width: 100%;
+  height: 100%;
+  pointer-events: none;
+  z-index: 9999;
+  overflow: hidden;
+}
+
+.snowflake {
+  position: absolute;
+  top: -20px;
+  color: rgba(255, 255, 255, 0.9);
+  font-size: 1.4em;
+  text-shadow: 0 0 8px rgba(100, 150, 200, 0.5), 0 0 3px rgba(255,255,255,0.8);
+  animation: fall linear infinite;
+}
+
+.snow-left .snowflake,
+.snow-right .snowflake {
+  font-size: 1.6em;
+  color: rgba(200, 220, 255, 0.95);
+}
+
+@keyframes fall {
+  0% { 
+    transform: translateY(-20px) rotate(0deg) translateX(0); 
+    opacity: 1;
+  }
+  50% {
+    transform: translateY(50vh) rotate(180deg) translateX(15px);
+  }
+  100% { 
+    transform: translateY(105vh) rotate(360deg) translateX(-10px); 
+    opacity: 0.6;
+  }
+}
+
+/* --- 主容器 --- */
+.container {
+  width: 100%;
+  max-width: 680px;
+  background: #ffffff;
+  border-radius: 16px;
+  box-shadow: 0 8px 32px rgba(211, 47, 47, 0.15), 0 0 0 4px rgba(255, 255, 255, 0.8);
+  overflow: hidden;
+  position: relative;
+  z-index: 10;
+  border: 2px solid #ffcdd2;
+  margin: 0;
+}
+
+.container::before {
+  content: '🌿🍒';
+  position: absolute;
+  top: 8px;
+  left: 8px;
+  font-size: 28px;
+  z-index: 20;
+  transform: rotate(-15deg);
+  filter: drop-shadow(2px 2px 2px rgba(0,0,0,0.2));
+}
+
+.container::after {
+  content: '🎄';
+  position: absolute;
+  top: 8px;
+  right: 8px;
+  font-size: 28px;
+  z-index: 20;
+  transform: rotate(10deg);
+  filter: drop-shadow(2px 2px 2px rgba(0,0,0,0.2));
+}
+
+/* --- 头部区域 --- */
+header {
+  background: linear-gradient(135deg, var(--xmas-red) 0%, var(--xmas-dark-red) 100%);
+  padding: 20px 24px;
+  text-align: center;
+  color: white;
+  position: relative;
+  border-bottom: 4px solid var(--xmas-gold);
+}
+
+header::after {
+  content: '';
+  position: absolute;
+  bottom: -12px;
+  left: 0;
+  width: 100%;
+  height: 24px;
+  background: radial-gradient(circle, #ffffff 50%, transparent 55%) repeat-x;
+  background-size: 24px 24px;
+  z-index: 1;
+}
+
+h1 {
+  font-family: 'ZCOOL KuaiLe', 'Mountains of Christmas', cursive;
+  font-size: 26px;
+  font-weight: 700;
+  margin-bottom: 2px;
+  text-shadow: 2px 2px 4px rgba(0,0,0,0.3);
+}
+
+.subtitle {
+  font-family: 'ZCOOL KuaiLe', sans-serif;
+  font-size: 14px;
+  opacity: 0.95;
+  font-weight: 400;
+  letter-spacing: 0.5px;
+}
+
+/* --- 内容区域 --- */
+.content {
+  padding: 32px 24px 28px;
+  background-image: radial-gradient(#d32f2f 1px, transparent 1px), radial-gradient(#2e7d32 1px, transparent 1px);
+  background-size: 40px 40px;
+  background-position: 0 0, 20px 20px;
+  background-color: #fff;
+  min-height: 420px;
+}
+
+/* --- 步骤条 --- */
+.step-indicator {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  margin-bottom: 28px;
+  padding: 10px 0;
+}
+
+.step-item {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  gap: 8px;
+  position: relative;
+  flex: 1;
+}
+
+.step-item:not(.active):not(.completed) {
+  opacity: 0.5;
+  filter: grayscale(1);
+}
+
+.step-circle {
+  width: 54px;
+  height: 54px;
+  border-radius: 50%;
+  background: #fafafa;
+  border: 3px solid #eee;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  font-size: 24px;
+  transition: all 0.3s ease;
+  z-index: 2;
+  box-shadow: 0 4px 8px rgba(0,0,0,0.08);
+}
+
+.step-item.active .step-circle {
+  background: #fff;
+  border-color: var(--xmas-red);
+  transform: scale(1.1);
+  box-shadow: 0 0 15px rgba(211, 47, 47, 0.4);
+}
+
+.step-item.completed .step-circle {
+  background: #e8f5e9;
+  border-color: var(--xmas-green);
+}
+
+.step-item span {
+  font-size: 12px;
+  font-weight: 600;
+  color: #757575;
+  font-family: 'ZCOOL KuaiLe', sans-serif;
+}
+
+.step-item.active span { color: var(--xmas-red); }
+.step-item.completed span { color: var(--xmas-green); }
+
+.step-line {
+  flex: 1;
+  height: 4px;
+  background: #eeeeee;
+  margin: 0 -10px;
+  position: relative;
+  top: -14px;
+  z-index: 1;
+  border-radius: 2px;
+}
+
+.step-line.completed {
+  background: linear-gradient(to right, var(--xmas-green), var(--xmas-red));
+}
+
+/* --- 面板动画 --- */
+.step-panel {
+  display: none;
+  animation: fadeIn 0.4s ease;
+}
+.step-panel.active { display: block; }
+
+@keyframes fadeIn {
+  from { opacity: 0; transform: translateY(10px); }
+  to { opacity: 1; transform: translateY(0); }
+}
+
+/* --- 表单控件 --- */
+.form-group { margin-bottom: 20px; }
+
+label {
+  display: block;
+  margin-bottom: 8px;
+  font-weight: 600;
+  color: var(--xmas-dark-green);
+  font-size: 14px;
+  font-family: 'ZCOOL KuaiLe', sans-serif;
+}
+
+input, textarea {
+  width: 100%;
+  padding: 16px 20px;
+  background: #ffffff;
+  border: 2px solid #e0e0e0;
+  border-radius: 16px;
+  font-size: 15px;
+  font-family: 'ZCOOL KuaiLe', sans-serif;
+  color: #333;
+  transition: all 0.3s;
+}
+
+input::placeholder, textarea::placeholder {
+  font-family: 'ZCOOL KuaiLe', sans-serif;
+  color: #aaa;
+}
+
+input:focus, textarea:focus {
+  outline: none;
+  border-color: var(--xmas-red);
+  box-shadow: 0 0 0 4px rgba(211, 47, 47, 0.1);
+}
+
+textarea { font-family: 'Roboto Mono', monospace; font-size: 14px; }
+
+/* --- 按钮 --- */
+.btn {
+  display: block;
+  width: 100%;
+  padding: 16px 20px;
+  background: linear-gradient(135deg, var(--xmas-green), var(--xmas-dark-green));
+  color: white;
+  border: none;
+  border-radius: 60px;
+  font-size: 17px;
+  font-weight: 600;
+  font-family: 'ZCOOL KuaiLe', sans-serif;
+  cursor: pointer;
+  transition: transform 0.2s, box-shadow 0.2s;
+  box-shadow: 0 4px 12px rgba(46, 125, 50, 0.3);
+}
+
+.btn:hover {
+  transform: translateY(-2px);
+  box-shadow: 0 6px 16px rgba(46, 125, 50, 0.4);
+}
+
+.btn:active { transform: translateY(0); }
+
+.btn-secondary {
+  background: transparent;
+  color: #757575;
+  box-shadow: none;
+  border: 2px solid #e0e0e0;
+}
+.btn-secondary:hover {
+  background: #f5f5f5;
+  color: #424242;
+  box-shadow: none;
+}
+
+.btn-success {
+  background: linear-gradient(135deg, var(--xmas-red), var(--xmas-dark-red));
+  box-shadow: 0 4px 12px rgba(211, 47, 47, 0.3);
+}
+.btn-success:hover {
+  box-shadow: 0 6px 16px rgba(211, 47, 47, 0.4);
+}
+
+.btn-group { display: flex; gap: 10px; margin-top: 12px; }
+
+/* --- Token 帮助区域 --- */
+.token-help {
+  background: #f1f8e9;
+  border: 1px dashed var(--xmas-green);
+  border-radius: 16px;
+  padding: 14px 16px;
+  margin-bottom: 16px;
+}
+.token-steps { display: flex; flex-direction: column; gap: 6px; font-size: 13px; color: var(--xmas-dark-green); font-family: 'ZCOOL KuaiLe', sans-serif; }
+.token-steps a {
+  color: var(--xmas-red);
+  font-weight: 600;
+  text-decoration: none;
+  border-bottom: 1px dashed var(--xmas-red);
+  padding: 2px 4px;
+}
+
+/* --- 结果和提示 --- */
+.step-result { margin: 12px 0; font-size: 14px; border-radius: 8px; overflow: hidden; }
+.alert { padding: 12px 16px; display: flex; align-items: center; gap: 10px; }
+.alert-success { background: #e8f5e9; color: #2e7d32; }
+.alert-error { background: #ffebee; color: #c62828; }
+
+/* --- 确认信息卡片 --- */
+.confirm-info {
+  background: #fafafa;
+  border-radius: 16px;
+  margin-bottom: 18px;
+  border: 1px solid #e0e0e0;
+  overflow: hidden;
+}
+
+.confirm-item {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  padding: 14px 18px;
+  border-bottom: 1px solid #eee;
+}
+
+.confirm-item:last-child { border-bottom: none; }
+
+.confirm-label {
+  font-size: 13px;
+  color: #616161;
+  display: flex;
+  align-items: center;
+  gap: 8px;
+}
+
+.confirm-label i { color: var(--xmas-green); }
+
+.confirm-value {
+  font-size: 13px;
+  font-weight: 600;
+  color: #212121;
+}
+
+/* --- Footer --- */
+footer {
+  text-align: center;
+  padding: 12px;
+  color: #90a4ae;
+  font-size: 11px;
+  background: #fafafa;
+  border-top: 1px solid #eee;
+}
+
+/* --- 响应式 --- */
+@media (max-width: 600px) {
+  .step-circle { width: 40px; height: 40px; font-size: 18px; }
+  header { padding: 12px 14px; }
+  .content { padding: 18px 14px; }
+  h1 { font-size: 22px; }
+}
+
+/* --- Query Page Extras --- */
+.query-nav a {
+  color: var(--xmas-green);
+  text-decoration: none;
+  font-weight: 600;
+  display: inline-flex;
+  align-items: center;
+  gap: 8px;
+  margin-bottom: 20px;
+}
+
+.results-table-wrapper { overflow-x: auto; }
+.results-table { width: 100%; border-collapse: collapse; margin-top: 16px; font-size: 14px; }
+.results-table th { background: #f5f5f5; padding: 12px; text-align: center; color: #616161; font-family: 'ZCOOL KuaiLe', sans-serif; }
+.results-table th:nth-child(1) { width: 30%; }
+.results-table th:nth-child(2) { width: 20%; min-width: 100px; }
+.results-table th:nth-child(3) { width: 30%; }
+.results-table th:nth-child(4) { width: 20%; }
+.results-table td { border-bottom: 1px solid #eee; padding: 12px; color: #424242; text-align: center; }
+
+.status-badge {
+  display: inline-block;
+  padding: 6px 16px;
+  border-radius: 20px;
+  font-size: 13px;
+  font-weight: 500;
+  min-width: 70px;
+  text-align: center;
+}
+.status-valid { background: #e8f5e9; color: #2e7d32; }
+.status-used { background: #f5f5f5; color: #757575; }
+.status-disabled { background: #ffebee; color: #c62828; }
+.status-expired { background: #fff3e0; color: #e65100; }
+.status-notfound { background: #fafafa; color: #9e9e9e; }
+
+/* Stats & Tabs */
+.results-stats { display: flex; gap: 12px; margin-bottom: 20px; }
+.stat-item { flex: 1; background: #fafafa; padding: 16px 18px; border-radius: 16px; text-align: center; border: 1px solid #eee; min-width: 100px; }
+.stat-label { font-size: 13px; color: #757575; font-family: 'ZCOOL KuaiLe', sans-serif; }
+.stat-value { display: block; font-size: 24px; font-weight: 700; margin-top: 6px; }
+
+.results-tabs { display: flex; gap: 8px; margin-bottom: 10px; flex-wrap: wrap; }
+.tab-btn {
+  padding: 10px 22px;
+  border-radius: 30px;
+  border: 1px solid #e0e0e0;
+  background: #fff;
+  cursor: pointer;
+  font-size: 14px;
+  font-family: 'ZCOOL KuaiLe', sans-serif;
+  transition: all 0.2s;
+}
+.tab-btn.active {
+  background: var(--xmas-red);
+  color: white;
+  border-color: var(--xmas-red);
+}
+
+/* --- 历史记录表格 --- */
+.history-header {
+  display: grid;
+  grid-template-columns: 1fr 1.5fr 1fr 1fr;
+  gap: 8px;
+  padding: 10px 12px;
+  background: #f5f5f5;
+  border-radius: 8px 8px 0 0;
+  font-size: 12px;
+  font-weight: 600;
+  color: #616161;
+  font-family: 'ZCOOL KuaiLe', sans-serif;
+}
+
+.history-header-item {
+  text-align: center;
+}
+
+.history-item {
+  display: grid;
+  grid-template-columns: 1fr 1.5fr 1fr 1fr;
+  gap: 8px;
+  padding: 10px 12px;
+  border-bottom: 1px solid #eee;
+  font-size: 12px;
+  color: #424242;
+}
+
+.history-item:last-child {
+  border-bottom: none;
+}
+
+.history-value {
+  text-align: center;
+  word-break: break-all;
+}
+
+.history-result {
+  text-align: center;
+  color: var(--xmas-green);
+  font-weight: 500;
+}
+
+.history-empty {
+  display: block;
+  text-align: center;
+  padding: 30px;
+  color: #999;
+}
+
+.history-empty .history-value {
+  font-size: 14px;
+}
+
+/* --- 点击雪花效果 --- */
+.click-snowflake {
+  position: fixed;
+  pointer-events: none;
+  font-size: 20px;
+  z-index: 99999;
+  animation: clickSnowflake 0.8s ease-out forwards;
+  text-shadow: 0 0 5px rgba(100, 150, 255, 0.6);
+}
+
+@keyframes clickSnowflake {
+  0% {
+    opacity: 1;
+    transform: translate(0, 0) scale(1) rotate(0deg);
+  }
+  100% {
+    opacity: 0;
+    transform: translate(var(--tx), var(--ty)) scale(0.3) rotate(180deg);
+  }
+}

@@ -39,9 +39,29 @@ export async function testConnection(): Promise<boolean> {
 
 export async function syncDatabase(): Promise<void> {
   try {
+    // Создаём только новые таблицы, не изменяем существующие
     await sequelize.sync({ alter: false });
     console.log('✓ Синхронизация моделей с БД выполнена');
   } catch (error) {
     console.error('✗ Ошибка синхронизации:', error);
+  }
+  
+  // Создаём таблицу chatgpt_cdks через raw SQL если не существует
+  try {
+    await sequelize.query(`
+      CREATE TABLE IF NOT EXISTS chatgpt_cdks (
+        id TEXT PRIMARY KEY,
+        cdk TEXT NOT NULL UNIQUE,
+        gpt_type TEXT NOT NULL,
+        status TEXT NOT NULL DEFAULT 'available',
+        used_at DATETIME,
+        order_code TEXT,
+        created_at DATETIME DEFAULT CURRENT_TIMESTAMP,
+        updated_at DATETIME DEFAULT CURRENT_TIMESTAMP
+      )
+    `);
+    console.log('✓ Таблица chatgpt_cdks готова');
+  } catch (error) {
+    console.error('✗ Ошибка создания chatgpt_cdks:', error);
   }
 }

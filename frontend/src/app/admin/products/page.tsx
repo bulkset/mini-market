@@ -15,6 +15,7 @@ const navigation = [
   { name: 'Товары', href: '/admin/products', icon: Package },
   { name: 'Инструкции', href: '/admin/instructions', icon: FileText },
   { name: 'Коды', href: '/admin/codes', icon: Key },
+  { name: 'ChatGPT CDK', href: '/admin/chatgpt-cdks', icon: Key },
   { name: 'Статистика', href: '/admin/stats', icon: BarChart3 },
   { name: 'Настройки', href: '/admin/settings', icon: Settings },
 ];
@@ -66,10 +67,15 @@ export default function ProductsPage() {
     
     const productData = {
       name: formData.get('name') as string,
+      type: formData.get('type') as string || 'digital_file',
+      gptType: formData.get('gptType') as string || undefined,
       categoryId: formData.get('categoryId') as string || undefined,
       instructionTemplateId: formData.get('instructionTemplateId') as string || undefined,
       imageUrl: formData.get('imageUrl') as string || undefined,
       description: formData.get('description') as string || undefined,
+      description2: formData.get('description2') as string || undefined,
+      productTitle1: formData.get('productTitle1') as string || undefined,
+      productTitle2: formData.get('productTitle2') as string || undefined,
       shortDescription: formData.get('shortDescription') as string || undefined,
       status: (formData.get('status') as string) || 'active',
     };
@@ -168,10 +174,17 @@ export default function ProductsPage() {
             </div>
             <form onSubmit={handleCreateProduct} className="p-6 space-y-4">
               <div><label className="block text-sm font-medium mb-2 text-gray-300">Название *</label><input name="name" required defaultValue={editingProduct?.name || ''} className="w-full px-4 py-3 bg-gray-800 border border-gray-700 rounded-xl text-white" /></div>
+              <div><label className="block text-sm font-medium mb-2 text-gray-300">Тип товара</label><select name="type" defaultValue={editingProduct?.type || 'digital_file'} onChange={(e) => { const form = e.target.form; if (form) { const typeSelect = form.querySelector('[name="gptType"]') as HTMLSelectElement; if (typeSelect) typeSelect.style.display = e.target.value === 'chatgpt_token' ? 'block' : 'none'; }}} className="w-full px-4 py-3 bg-gray-800 border border-gray-700 rounded-xl text-white"><option value="digital_file">Обычный товар (файл/код)</option><option value="text_instruction">Текстовая инструкция</option><option value="link">Ссылка</option><option value="chatgpt_token">ChatGPT токен (активация)</option></select></div>
+              <div><label className="block text-sm font-medium mb-2 text-gray-300">Тип ChatGPT</label><select name="gptType" defaultValue={editingProduct?.gptType || ''} style={{ display: editingProduct?.type === 'chatgpt_token' ? 'block' : 'none' }} className="w-full px-4 py-3 bg-gray-800 border border-gray-700 rounded-xl text-white"><option value="">Выберите тип...</option><option value="plus_1m">ChatGPT Plus 1 месяц</option><option value="plus_12m">ChatGPT Plus 12 месяцев</option><option value="pro_1m">ChatGPT Pro 1 месяц</option><option value="go_12m">ChatGPT GO 12 месяцев</option></select></div>
               <div><label className="block text-sm font-medium mb-2 text-gray-300">Инструкция</label><select name="instructionTemplateId" defaultValue={editingProduct?.instructionTemplateId || ''} className="w-full px-4 py-3 bg-gray-800 border border-gray-700 rounded-xl text-white"><option value="">Без инструкции</option>{instructionsData?.data?.instructions?.map((inst: any) => (<option key={inst.id} value={inst.id}>{inst.name}</option>))}</select></div>
               <div><label className="block text-sm font-medium mb-2 text-gray-300">Краткое описание</label><input name="shortDescription" defaultValue={editingProduct?.shortDescription || ''} className="w-full px-4 py-3 bg-gray-800 border border-gray-700 rounded-xl text-white" /></div>
+              <div className="grid grid-cols-2 gap-4">
+                <div><label className="block text-sm font-medium mb-2 text-gray-300">Название товара 1</label><input name="productTitle1" defaultValue={editingProduct?.productTitle1 || ''} placeholder="Товар 1" className="w-full px-4 py-3 bg-gray-800 border border-gray-700 rounded-xl text-white" /></div>
+                <div><label className="block text-sm font-medium mb-2 text-gray-300">Название товара 2</label><input name="productTitle2" defaultValue={editingProduct?.productTitle2 || ''} placeholder="Товар 2" className="w-full px-4 py-3 bg-gray-800 border border-gray-700 rounded-xl text-white" /></div>
+              </div>
               <div><label className="block text-sm font-medium mb-2 text-gray-300">Изображение (URL)</label><input name="imageUrl" defaultValue={editingProduct?.imageUrl || ''} placeholder="https://example.com/image.jpg" className="w-full px-4 py-3 bg-gray-800 border border-gray-700 rounded-xl text-white" /></div>
-              <div><label className="block text-sm font-medium mb-2 text-gray-300">Описание</label><textarea name="description" rows={3} defaultValue={editingProduct?.description || ''} className="w-full px-4 py-3 bg-gray-800 border border-gray-700 rounded-xl text-white" /></div>
+              <div><label className="block text-sm font-medium mb-2 text-gray-300">Товар 1</label><textarea name="description" rows={3} defaultValue={editingProduct?.description || ''} className="w-full px-4 py-3 bg-gradient-to-r from-purple-500/10 to-pink-500/10 border border-purple-500/30 rounded-xl text-white" /></div>
+              <div><label className="block text-sm font-medium mb-2 text-gray-300">Товар 2</label><textarea name="description2" rows={3} defaultValue={editingProduct?.description2 || ''} placeholder="Второй товар" className="w-full px-4 py-3 bg-gradient-to-r from-purple-500/10 to-pink-500/10 border border-purple-500/30 rounded-xl text-white" /></div>
               <div><label className="block text-sm font-medium mb-2 text-gray-300">Статус</label><select name="status" defaultValue={editingProduct?.status || 'active'} className="w-full px-4 py-3 bg-gray-800 border border-gray-700 rounded-xl text-white"><option value="active">Активный</option><option value="hidden">Скрытый</option></select></div>
               
               {!editingProduct && (

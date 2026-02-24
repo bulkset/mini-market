@@ -2,3 +2,10 @@
 /backend/dist
 /node_modules
 /node_modules/.bin
+/frontend/.next
+/frontend/.next
+/frontend/.next
+/frontend/.next
+/frontend/.next
+/frontend/.next/cache
+/frontend/.next/cache/webpack/client-development

@@ -168,8 +168,12 @@ interface ProductAttributes {
   slug: string;
   categoryId: string | null;
   description: string | null;
+  description2: string | null;
+  productTitle1: string | null;
+  productTitle2: string | null;
   shortDescription: string | null;
   type: string;
+  gptType: string | null;
   instruction: string | null;
   instructionTemplateId: string | null;
   imageUrl: string | null;
@@ -179,7 +183,7 @@ interface ProductAttributes {
   updatedAt: Date;
 }
 
-interface ProductCreationAttributes extends Optional<ProductAttributes, 'id' | 'slug' | 'categoryId' | 'description' | 'shortDescription' | 'instruction' | 'instructionTemplateId' | 'imageUrl' | 'status' | 'isFeatured' | 'createdAt' | 'updatedAt'> {}
+interface ProductCreationAttributes extends Optional<ProductAttributes, 'id' | 'slug' | 'categoryId' | 'description' | 'description2' | 'productTitle1' | 'productTitle2' | 'shortDescription' | 'gptType' | 'instruction' | 'instructionTemplateId' | 'imageUrl' | 'status' | 'isFeatured' | 'createdAt' | 'updatedAt'> {}
 
 export class Product extends Model<ProductAttributes, ProductCreationAttributes> implements ProductAttributes {
   declare id: string;
@@ -187,8 +191,12 @@ export class Product extends Model<ProductAttributes, ProductCreationAttributes>
   declare slug: string;
   declare categoryId: string | null;
   declare description: string | null;
+  declare description2: string | null;
+  declare productTitle1: string | null;
+  declare productTitle2: string | null;
   declare shortDescription: string | null;
   declare type: string;
+  declare gptType: string | null;
   declare instruction: string | null;
   declare instructionTemplateId: string | null;
   declare imageUrl: string | null;
@@ -224,6 +232,21 @@ Product.init(
       type: DataTypes.TEXT,
       allowNull: true,
     },
+    description2: {
+      type: DataTypes.TEXT,
+      allowNull: true,
+      field: 'description_2',
+    },
+    productTitle1: {
+      type: DataTypes.STRING(255),
+      allowNull: true,
+      field: 'product_title_1',
+    },
+    productTitle2: {
+      type: DataTypes.STRING(255),
+      allowNull: true,
+      field: 'product_title_2',
+    },
     shortDescription: {
       type: DataTypes.STRING(500),
       allowNull: true,
@@ -232,6 +255,11 @@ Product.init(
     type: {
       type: DataTypes.STRING(50),
       defaultValue: 'digital_file',
+    },
+    gptType: {
+      type: DataTypes.STRING(50),
+      allowNull: true,
+      field: 'gpt_type',
     },
     instruction: {
       type: DataTypes.TEXT('long'),
@@ -471,12 +499,16 @@ interface ActivationCodeAttributes {
   userEmail: string | null;
   codeType: string | null;
   metadata: Record<string, unknown> | null;
+  cdkCode: string | null;
+  cdkStatus: string | null;
+  cdkTaskId: string | null;
+  cdkMessage: string | null;
   createdBy: string | null;
   createdAt: Date;
   updatedAt: Date;
 }
 
-interface ActivationCodeCreationAttributes extends Optional<ActivationCodeAttributes, 'id' | 'productId' | 'status' | 'usageLimit' | 'usageCount' | 'activatedAt' | 'expiresAt' | 'userIp' | 'userEmail' | 'codeType' | 'metadata' | 'createdBy' | 'createdAt' | 'updatedAt'> {}
+interface ActivationCodeCreationAttributes extends Optional<ActivationCodeAttributes, 'id' | 'productId' | 'status' | 'usageLimit' | 'usageCount' | 'activatedAt' | 'expiresAt' | 'userIp' | 'userEmail' | 'codeType' | 'metadata' | 'cdkCode' | 'cdkStatus' | 'cdkTaskId' | 'cdkMessage' | 'createdBy' | 'createdAt' | 'updatedAt'> {}
 
 export class ActivationCode extends Model<ActivationCodeAttributes, ActivationCodeCreationAttributes> implements ActivationCodeAttributes {
   declare id: string;
@@ -491,6 +523,10 @@ export class ActivationCode extends Model<ActivationCodeAttributes, ActivationCo
   declare userEmail: string | null;
   declare codeType: string | null;
   declare metadata: Record<string, unknown> | null;
+  declare cdkCode: string | null;
+  declare cdkStatus: string | null;
+  declare cdkTaskId: string | null;
+  declare cdkMessage: string | null;
   declare createdBy: string | null;
   declare createdAt: Date;
   declare updatedAt: Date;
@@ -555,6 +591,26 @@ ActivationCode.init(
     metadata: {
       type: DataTypes.JSONB,
       allowNull: true,
+    },
+    cdkCode: {
+      type: DataTypes.STRING(255),
+      allowNull: true,
+      field: 'cdk_code',
+    },
+    cdkStatus: {
+      type: DataTypes.STRING(50),
+      allowNull: true,
+      field: 'cdk_status',
+    },
+    cdkTaskId: {
+      type: DataTypes.STRING(255),
+      allowNull: true,
+      field: 'cdk_task_id',
+    },
+    cdkMessage: {
+      type: DataTypes.TEXT,
+      allowNull: true,
+      field: 'cdk_message',
     },
     createdBy: {
       type: DataTypes.UUID,

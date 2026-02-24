@@ -67,6 +67,28 @@ export async function activateCode(code: string) {
 }
 
 /**
+ * Активация с токеном (DurielAPI)
+ */
+export async function rechargeWithToken(gptType: string, token: string, code?: string) {
+  const response = await api.post('/activate/recharge', { gptType, token, code });
+  return response.data;
+}
+
+/**
+ * Проверка статуса активации
+ */
+export async function checkRechargeStatus(taskId: string) {
+  const response = await api.get(`/activate/recharge/status/${taskId}`, {
+    params: { t: Date.now() },
+    headers: {
+      'Cache-Control': 'no-cache',
+      Pragma: 'no-cache',
+    },
+  });
+  return response.data;
+}
+
+/**
  * Получение публичных настроек магазина
  */
 export async function getPublicSettings() {
@@ -318,6 +340,25 @@ export async function getSettings() {
 
 export async function updateSettings(settings: Record<string, unknown>) {
   const response = await api.put('/admin/settings', settings);
+  return response.data;
+}
+
+// =====================================================
+// АДМИН API - CHATGPT CDK КОДЫ
+// =====================================================
+
+export async function getChatGPTCDKs(params?: { gptType?: string; status?: string }) {
+  const response = await api.get('/admin/chatgpt-cdks', { params });
+  return response.data;
+}
+
+export async function importChatGPTCDKs(gptType: string, cdks: string[]) {
+  const response = await api.post('/admin/chatgpt-cdks/import', { gptType, cdks });
+  return response.data;
+}
+
+export async function deleteChatGPTCDK(id: string) {
+  const response = await api.delete(`/admin/chatgpt-cdks/${id}`);
   return response.data;
 }
 

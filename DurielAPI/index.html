@@ -1,0 +1,262 @@
+<!DOCTYPE html>
+<html lang="zh-CN">
+
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <title>ChatGPT 圣诞充值 🎅</title>
+  <link rel="icon"
+    href="data:image/svg+xml,<svg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 100 100'><text y='80' font-size='80'>🎄</text></svg>"
+    type="image/svg+xml">
+  <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css" />
+  <link rel="preconnect" href="https://fonts.googleapis.com">
+  <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+  <link rel="preload" as="style"
+    href="https://fonts.googleapis.com/css2?family=Poppins:wght@300;400;500;600;700&family=Mountains+of+Christmas:wght@400;700&family=ZCOOL+KuaiLe&display=block">
+  <link
+    href="https://fonts.googleapis.com/css2?family=Poppins:wght@300;400;500;600;700&family=Mountains+of+Christmas:wght@400;700&family=ZCOOL+KuaiLe&display=block"
+    rel="stylesheet" />
+  <style>
+    /* 字体加载前隐藏内容，避免闪烁 */
+    html {
+      visibility: hidden;
+    }
+
+    html.fonts-loaded {
+      visibility: visible;
+    }
+  </style>
+  <!-- 引用 css 文件夹下的 styles.css -->
+  <link rel="stylesheet" href="css/styles.css" />
+  <link rel="stylesheet" href="css/snow-hills.css" />
+</head>
+
+<body>
+  <div class="snow-hills" aria-hidden="true"></div>
+  <!-- 圣诞装饰元素 -->
+  <div class="xmas-decorations" aria-hidden="true">
+    <div class="deco deco-tree-left">🎄</div>
+    <div class="deco deco-tree-left-2" style="top: 25%; left: 8%; font-size: 50px;">🎄</div>
+    <div class="deco deco-tree-right">🎄</div>
+    <div class="deco deco-tree-right-2" style="bottom: 25%; right: 8%; font-size: 50px;">🎄</div>
+    <div class="deco deco-santa">🎅</div>
+    <div class="deco deco-reindeer">🦌</div>
+    <div class="deco deco-sleigh">🛷</div>
+    <div class="deco deco-holly-left">🌿</div>
+    <div class="deco deco-holly-right">🍒</div>
+    <div class="deco deco-gift1">🎁</div>
+    <div class="deco deco-gift2">🎀</div>
+    <div class="deco deco-star">⭐</div>
+    <div class="deco deco-bell">🔔</div>
+    <div class="deco deco-candy">🍬</div>
+    <div class="deco deco-snowman">⛄</div>
+    <div class="deco deco-mistletoe">💚</div>
+    <div class="deco deco-chatgpt">
+      <svg viewBox="0 0 41 41" fill="none" xmlns="http://www.w3.org/2000/svg" width="48" height="48">
+        <path
+          d="M37.5324 16.8707C37.9808 15.5241 38.1363 14.0974 37.9886 12.6859C37.8409 11.2744 37.3934 9.91076 36.676 8.68622C35.6126 6.83404 33.9882 5.3676 32.0373 4.4985C30.0864 3.62941 27.9098 3.40259 25.8215 3.85078C24.8796 2.7893 23.7219 1.94125 22.4257 1.36341C21.1295 0.785575 19.7249 0.491269 18.3058 0.500528C16.1708 0.495061 14.0893 1.16803 12.3614 2.42214C10.6335 3.67624 9.34853 5.44666 8.6917 7.47815C7.30085 7.76286 5.98686 8.3414 4.8377 9.17505C3.68854 10.0087 2.73073 11.0782 2.02839 12.312C0.956464 14.1591 0.479929 16.2988 0.479929 18.3949C0.479929 20.491 1.24019 22.4213 2.44208 24.0332C1.99373 25.3797 1.83822 26.8065 1.98593 28.2179C2.13364 29.6294 2.58117 30.9931 3.29858 32.2176C4.36195 34.0698 5.98637 35.5362 7.93727 36.4053C9.88816 37.2744 12.0647 37.5012 14.1531 37.053C15.0949 38.1145 16.2527 38.9625 17.5489 39.5404C18.8451 40.1182 20.2497 40.4125 21.6688 40.4032C23.8044 40.4088 25.8866 39.7356 27.6148 38.4808C29.343 37.226 30.6279 35.4546 31.2839 33.4221C32.6747 33.1374 33.9886 32.5588 35.1378 31.7252C36.2869 30.8915 37.2448 29.822 37.9471 28.5882C39.0247 26.7413 39.5765 24.5765 39.5765 22.3749C39.5765 20.1733 39.0247 18.0085 37.9471 16.1616L37.5324 16.8707Z"
+          fill="rgba(255,255,255,0.9)" />
+      </svg>
+    </div>
+  </div>
+
+  <!-- 飘雪效果层 - 左侧 -->
+  <div class="snow-container snow-left" aria-hidden="true">
+    <div class="snowflake" style="left: 2%; animation-duration: 8s;">❄</div>
+    <div class="snowflake" style="left: 8%; animation-duration: 12s; animation-delay: 1s">❅</div>
+    <div class="snowflake" style="left: 15%; animation-duration: 9s; animation-delay: 3s">❆</div>
+    <div class="snowflake" style="left: 5%; animation-duration: 11s; animation-delay: 2s">❄</div>
+    <div class="snowflake" style="left: 20%; animation-duration: 7s; animation-delay: 4s">❅</div>
+    <div class="snowflake" style="left: 12%; animation-duration: 10s; animation-delay: 0.5s">❆</div>
+    <div class="snowflake" style="left: 25%; animation-duration: 13s; animation-delay: 2.5s">❄</div>
+    <div class="snowflake" style="left: 18%; animation-duration: 8s; animation-delay: 1.5s">❅</div>
+    <div class="snowflake" style="left: 4%; animation-duration: 14s; animation-delay: 5s; font-size: 1.2em;">❄</div>
+    <div class="snowflake" style="left: 10%; animation-duration: 9.5s; animation-delay: 3.5s; font-size: 0.8em;">•</div>
+    <div class="snowflake" style="left: 22%; animation-duration: 11.5s; animation-delay: 1.2s; font-size: 1em;">*</div>
+    <div class="snowflake" style="left: 16%; animation-duration: 8.5s; animation-delay: 4.2s">❆</div>
+    <div class="snowflake" style="left: 6%; animation-duration: 10.5s; animation-delay: 2.8s">❅</div>
+    <div class="snowflake" style="left: 28%; animation-duration: 12.5s; animation-delay: 0.8s">❄</div>
+  </div>
+
+  <!-- 飘雪效果层 - 右侧 -->
+  <div class="snow-container snow-right" aria-hidden="true">
+    <div class="snowflake" style="left: 75%; animation-duration: 9s;">❄</div>
+    <div class="snowflake" style="left: 85%; animation-duration: 11s; animation-delay: 2s">❅</div>
+    <div class="snowflake" style="left: 90%; animation-duration: 7s; animation-delay: 1s">❆</div>
+    <div class="snowflake" style="left: 82%; animation-duration: 10s; animation-delay: 3s">❄</div>
+    <div class="snowflake" style="left: 95%; animation-duration: 12s; animation-delay: 0s">❅</div>
+    <div class="snowflake" style="left: 88%; animation-duration: 8s; animation-delay: 4s">❆</div>
+    <div class="snowflake" style="left: 92%; animation-duration: 14s; animation-delay: 1.5s">❄</div>
+    <div class="snowflake" style="left: 78%; animation-duration: 9s; animation-delay: 2.5s">❅</div>
+    <div class="snowflake" style="left: 80%; animation-duration: 13s; animation-delay: 5.5s; font-size: 1.2em;">❄</div>
+    <div class="snowflake" style="left: 94%; animation-duration: 8.5s; animation-delay: 3.2s; font-size: 0.8em;">•</div>
+    <div class="snowflake" style="left: 86%; animation-duration: 10.5s; animation-delay: 1.8s; font-size: 1em;">*</div>
+    <div class="snowflake" style="left: 76%; animation-duration: 11.5s; animation-delay: 4.8s">❆</div>
+    <div class="snowflake" style="left: 98%; animation-duration: 9.5s; animation-delay: 2.2s">❅</div>
+    <div class="snowflake" style="left: 84%; animation-duration: 12.5s; animation-delay: 0.5s">❄</div>
+  </div>
+
+  <div class="container">
+    <header>
+      <div class="logo">
+        <div style="font-size: 40px; margin-bottom: 6px;">🎅</div>
+        <div>
+          <h1 id="sysTitle">Merry Christmas Recharge</h1>
+          <p class="subtitle" id="sysDesc">ChatGPT Plus 账号充值 · 圣诞特别版 🎄</p>
+        </div>
+      </div>
+    </header>
+
+    <div class="content">
+      <!-- 步骤指示器 (Apples, Socks, Gifts) -->
+      <div class="step-indicator">
+        <div class="step-item active" id="stepIndicator1">
+          <div class="step-circle">🍎</div>
+          <span>平安果验证</span>
+        </div>
+        <div class="step-line"></div>
+        <div class="step-item" id="stepIndicator2">
+          <div class="step-circle">🧦</div>
+          <span>投放Token</span>
+        </div>
+        <div class="step-line"></div>
+        <div class="step-item" id="stepIndicator3">
+          <div class="step-circle">🎁</div>
+          <span>拆开礼物</span>
+        </div>
+      </div>
+
+      <!-- 步骤1 -->
+      <div class="step-panel active" id="step1Panel">
+        <div class="form-group">
+          <label for="cdkInput">验证圣诞卡密 (Card Key)</label>
+          <input type="text" id="cdkInput" placeholder="请输入充值卡密..." maxlength="25" />
+        </div>
+        <div id="step1Result" class="step-result"></div>
+        <button class="btn" onclick="verifyCDKStep()" id="verifyCdkBtn">验证卡密</button>
+      </div>
+
+      <!-- 步骤2 -->
+      <div class="step-panel" id="step2Panel">
+        <div class="token-help">
+          <div class="token-steps">
+            <div class="token-step">1. <a href="https://chatgpt.com/auth/login" target="_blank">登录ChatGPT</a></div>
+            <div class="token-step">2. <a href="https://chatgpt.com/api/auth/session" target="_blank">获取Token</a>
+              (Ctrl+A全选复制整个JSON)</div>
+            <div class="token-step">3. 粘贴到下方袜子里 🧦</div>
+          </div>
+        </div>
+        <div class="form-group">
+          <label for="tokenInput">Access Token (完整JSON)</label>
+          <textarea id="tokenInput"
+            placeholder='{"user":{"id":"user-xxx","email":"xxx@xxx.com",...},"expires":"2026-xx-xx","account":{...},"accessToken":"eyJhbGciOi...","authProvider":"openai",...}'
+            rows="4"></textarea>
+        </div>
+        <div id="step2Result" class="step-result"></div>
+        <div class="btn-group">
+          <button class="btn btn-secondary" onclick="goToStep(1)">上一步</button>
+          <button class="btn" onclick="parseTokenStep()" id="parseTokenBtn">解析账号</button>
+        </div>
+      </div>
+
+      <!-- 步骤3 -->
+      <div class="step-panel" id="step3Panel">
+        <div class="confirm-info">
+          <div class="confirm-item">
+            <div class="confirm-label"><i class="fas fa-ticket-alt"></i> 充值卡密</div>
+            <div class="confirm-value" id="confirmCdk">-</div>
+          </div>
+          <div class="confirm-item">
+            <div class="confirm-label"><i class="fas fa-envelope"></i> 账号邮箱</div>
+            <div class="confirm-value" id="confirmEmail">-</div>
+          </div>
+          <div class="confirm-item">
+            <div class="confirm-label"><i class="fas fa-crown"></i> 当前订阅</div>
+            <div class="confirm-value" id="confirmPlan">-</div>
+          </div>
+          <div class="confirm-item">
+            <div class="confirm-label"><i class="fas fa-box-open"></i> 卡密产品</div>
+            <div class="confirm-value" id="confirmProductName">-</div>
+          </div>
+        </div>
+
+        <div class="warning" id="plusWarning"
+          style="display: none; background: #ffebee; padding:10px; border-radius:8px; margin-bottom:15px; color:#c62828; font-size:13px;">
+          <strong><i class="fas fa-bell"></i> 覆盖充值提醒:</strong> 您的账号已是PLUS会员，覆盖充值会重新计费！
+        </div>
+
+        <div id="step3Result" class="step-result"></div>
+        <div class="btn-group">
+          <button class="btn btn-secondary" onclick="goToStep(2)">上一步</button>
+          <button class="btn btn-success" onclick="confirmRecharge()" id="confirmBtn">确认充值 (Gift)</button>
+        </div>
+      </div>
+
+      <!-- 结果 -->
+      <div class="step-panel" id="resultPanel">
+        <div id="finalResult" style="text-align:center; padding: 40px 0;"></div>
+        <button class="btn" onclick="resetSteps()">再充一单</button>
+      </div>
+
+      <div class="view-records" style="text-align: center; margin-top: 30px;">
+        <a href="#" onclick="showHistory(); return false;"
+          style="color:var(--xmas-red); text-decoration:none; font-weight:600;">
+          <i class="fas fa-history"></i> 我的礼物记录
+        </a>
+        <span style="margin: 0 10px; color: #ccc;">|</span>
+        <a href="query.html" style="color:var(--xmas-red); text-decoration:none; font-weight:600;">
+          <i class="fas fa-search"></i> 批量查询卡密
+        </a>
+      </div>
+    </div>
+
+    <footer>
+      <p>© 2025 ChatGPT Recharge | Merry Christmas ❄️</p>
+    </footer>
+  </div>
+
+  <!-- 模态框 -->
+  <div class="modal-overlay" id="historyModal"
+    style="display:none; position:fixed; top:0; left:0; width:100%; height:100%; background:rgba(0,0,0,0.5); z-index:1000; justify-content:center; align-items:center;">
+    <div class="modal" style="background:white; width:90%; max-width:650px; border-radius:12px; overflow:hidden;">
+      <div class="modal-header"
+        style="padding:15px; background:var(--xmas-red); color:white; display:flex; justify-content:space-between; font-family: 'ZCOOL KuaiLe', sans-serif;">
+        <div>📜 礼物清单</div>
+        <div onclick="hideHistory()" style="cursor:pointer;">&times;</div>
+      </div>
+      <div class="modal-content" id="historyContent" style="padding:15px; max-height:450px; overflow-y:auto;"></div>
+    </div>
+  </div>
+
+  <div class="modal-overlay" id="plusModal"
+    style="display:none; position:fixed; top:0; left:0; width:100%; height:100%; background:rgba(0,0,0,0.5); z-index:1001; justify-content:center; align-items:center;">
+    <div class="modal" style="background:white; width:90%; max-width:520px; border-radius:12px; overflow:hidden;">
+      <div class="modal-header"
+        style="padding:15px; background:var(--xmas-red); color:white; display:flex; justify-content:space-between; font-family: 'ZCOOL KuaiLe', sans-serif;">
+        <div>⚠️ 覆盖充值提醒</div>
+        <div onclick="hidePlusModal()" style="cursor:pointer;">&times;</div>
+      </div>
+      <div class="modal-content" style="padding:18px; line-height:1.6; color:#333;">
+        <div style="font-weight:600; margin-bottom:10px;">您的账号已是PLUS会员</div>
+        <div style="color:#c62828;">覆盖充值会重新计费！</div>
+        <div style="display:flex; justify-content:flex-end; gap:10px; margin-top:16px;">
+          <button class="btn btn-secondary" onclick="hidePlusModal()">我知道了</button>
+        </div>
+      </div>
+    </div>
+  </div>
+
+  <script src="js/app.js"></script>
+  <script>
+    // 字体加载完成后显示页面
+    document.fonts.ready.then(() => {
+      document.documentElement.classList.add('fonts-loaded');
+    });
+    // 备用：超时后强制显示
+    setTimeout(() => {
+      document.documentElement.classList.add('fonts-loaded');
+    }, 1000);
+  </script>
+</body>
+
+</html>

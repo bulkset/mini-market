@@ -2,6 +2,7 @@ import { Router, Response } from 'express';
 import { Op } from 'sequelize';
 import { v4 as uuidv4 } from 'uuid';
 import { sequelize } from '../db/models/index.js';
+import { ChatGPTCDK, importCDKs } from '../db/models/chatgpt-cdk.js';
 import multer from 'multer';
 import path from 'path';
 import fs from 'fs';
@@ -232,7 +233,7 @@ router.get('/products', async (req: AuthRequest, res: Response) => {
  */
 router.post('/products', async (req: AuthRequest, res: Response) => {
   try {
-    const { name, categoryId, instructionTemplateId, imageUrl, description, shortDescription, type, instruction, status } = req.body;
+    const { name, categoryId, instructionTemplateId, imageUrl, description, description2, productTitle1, productTitle2, shortDescription, type, instruction, status, gptType } = req.body;
     
     const catId = categoryId && categoryId.trim() ? categoryId : null;
     const instTplId = instructionTemplateId && instructionTemplateId.trim() ? instructionTemplateId : null;
@@ -251,11 +252,15 @@ router.post('/products', async (req: AuthRequest, res: Response) => {
       instructionTemplateId: instTplId,
       imageUrl: imgUrl,
       description,
+      description2,
+      productTitle1,
+      productTitle2,
       shortDescription,
       type: type || 'digital_file',
       instruction,
       status: status || 'active',
-      isFeatured: req.body.isFeatured || false
+      isFeatured: req.body.isFeatured || false,
+      gptType: gptType || null
     });
 
     await AdminLog.create({
@@ -473,6 +478,39 @@ router.post('/codes/generate', async (req: AuthRequest, res: Response) => {
       });
     }
 
+    const product = await Product.findByPk(productId);
+    if (!product) {
+      return res.status(404).json({
+        success: false,
+        error: 'Товар не найден'
+      });
+    }
+
+    const productGptType = (product as any).gptType as string | null;
+    if (productGptType) {
+      const availableCdks = await ChatGPTCDK.count({
+        where: {
+          gptType: productGptType,
+          status: 'available'
+        }
+      });
+
+      const requestedCount = Number(count) || 0;
+      if (!requestedCount || requestedCount < 1) {
+        return res.status(400).json({
+          success: false,
+          error: 'Количество кодов должно быть больше 0'
+        });
+      }
+
+      if (requestedCount > availableCdks) {
+        return res.status(400).json({
+          success: false,
+          error: `Недостаточно CDK для ${productGptType}. Доступно: ${availableCdks}`
+        });
+      }
+    }
+
     const codes = await generateCodes(
       productId,
       Number(count),
@@ -648,7 +686,14 @@ router.get('/stats', async (req: AuthRequest, res: Response) => {
   try {
     const totalCodes = await ActivationCode.count();
     
-    const usedCodes = await ActivationCode.count({ where: { status: 'used' } });
+    const usedCodes = await ActivationCode.count({
+      where: {
+        [Op.or]: [
+          { status: 'used' },
+          { usageCount: { [Op.gt]: 0 } }
+        ]
+      }
+    });
     
     const activeCodes = await ActivationCode.count({ where: { status: 'active' } });
     
@@ -658,7 +703,7 @@ router.get('/stats', async (req: AuthRequest, res: Response) => {
       attributes: [
         [sequelize.col('ActivationCode.product_id'), 'productId'],
         [sequelize.fn('COUNT', sequelize.col('ActivationCode.id')), 'total'],
-        [sequelize.fn('SUM', sequelize.literal('CASE WHEN "ActivationCode".status = \'used\' THEN 1 ELSE 0 END')), 'used']
+        [sequelize.fn('SUM', sequelize.literal('CASE WHEN "ActivationCode".status = \'used\' OR "ActivationCode".usage_count > 0 THEN 1 ELSE 0 END')), 'used']
       ],
       include: [{ model: Product, as: 'product', attributes: ['id', 'name'] }],
       group: ['ActivationCode.product_id', 'product.id'],
@@ -917,6 +962,84 @@ router.delete('/instructions/:id', async (req: AuthRequest, res: Response) => {
     res.json({ success: true });
   } catch (error) {
     res.status(500).json({ success: false, error: 'Ошибка удаления инструкции' });
+  }
+});
+
+// =====================================================
+// CHATGPT CDK КОДЫ
+// =====================================================
+
+/**
+ * GET /api/v1/admin/chatgpt-cdks
+ * Список CDK кодов
+ */
+router.get('/chatgpt-cdks', async (req: AuthRequest, res: Response) => {
+  try {
+    const { gptType, status } = req.query;
+    const where: any = {};
+    if (gptType) where.gptType = gptType;
+    if (status) where.status = status;
+
+    const cdks = await ChatGPTCDK.findAll({
+      where,
+      order: [['created_at', 'DESC']]
+    });
+
+    // Статистика по типам
+    const stats: any = {};
+    const allCdks = await ChatGPTCDK.findAll();
+    for (const cdk of allCdks as any[]) {
+      const t = (cdk as any).gptType;
+      if (!stats[t]) stats[t] = { available: 0, pending: 0, used: 0, failed: 0 };
+      const s = (cdk as any).status;
+      if (stats[t][s] !== undefined) stats[t][s]++;
+    }
+
+    res.json({ success: true, data: { cdks: cdks.map((c: any) => c.toJSON()), stats } });
+  } catch (error: any) {
+    console.error('ChatGPT CDK error:', error);
+    res.status(500).json({ success: false, error: 'Ошибка получения CDK кодов: ' + (error.message || error) });
+  }
+});
+
+/**
+ * POST /api/v1/admin/chatgpt-cdks/import
+ * Импорт CDK кодов
+ */
+router.post('/chatgpt-cdks/import', async (req: AuthRequest, res: Response) => {
+  try {
+    const { gptType, cdks } = req.body;
+
+    if (!gptType || !cdks || !Array.isArray(cdks) || cdks.length === 0) {
+      return res.status(400).json({ success: false, error: 'gptType и массив cdks обязательны' });
+    }
+
+    const validTypes = ['plus_1m', 'plus_12m', 'pro_1m', 'go_12m'];
+    if (!validTypes.includes(gptType)) {
+      return res.status(400).json({ success: false, error: 'Неверный тип GPT' });
+    }
+
+    const result = await importCDKs(gptType, cdks.map((c: string) => c.trim()).filter(Boolean));
+
+    res.json({ success: true, data: result });
+  } catch (error) {
+    res.status(500).json({ success: false, error: 'Ошибка импорта CDK кодов' });
+  }
+});
+
+/**
+ * DELETE /api/v1/admin/chatgpt-cdks/:id
+ * Удаление CDK кода
+ */
+router.delete('/chatgpt-cdks/:id', async (req: AuthRequest, res: Response) => {
+  try {
+    const { id } = req.params;
+    const cdk = await ChatGPTCDK.findByPk(id);
+    if (!cdk) return res.status(404).json({ success: false, error: 'CDK не найден' });
+    await (cdk as any).destroy();
+    res.json({ success: true });
+  } catch (error) {
+    res.status(500).json({ success: false, error: 'Ошибка удаления CDK' });
   }
 });
 

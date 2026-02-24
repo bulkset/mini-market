@@ -1,7 +1,9 @@
 /** @type {import('next').NextConfig} */
 const nextConfig = {
-  reactStrictMode: true,
+  reactStrictMode: false, // Отключаем strict mode для ускорения
   output: 'standalone',
+  compress: true, // Включаем gzip сжатие
+  poweredByHeader: false,
   images: {
     remotePatterns: [
       {
@@ -9,6 +11,29 @@ const nextConfig = {
         hostname: '**',
       },
     ],
+    minimumCacheTTL: 3600, // Кэш изображений 1 час
+  },
+  async headers() {
+    return [
+      {
+        source: '/(.*)',
+        headers: [
+          {
+            key: 'X-Content-Type-Options',
+            value: 'nosniff',
+          },
+        ],
+      },
+      {
+        source: '/api/:path*',
+        headers: [
+          {
+            key: 'Cache-Control',
+            value: 'no-store',
+          },
+        ],
+      },
+    ];
   },
   async rewrites() {
     return [

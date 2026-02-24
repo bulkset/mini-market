@@ -1,6 +1,6 @@
 const sqlite3 = require('sqlite3').verbose();
 
-const dbPath = 'C:/Users/GlowNestOffice/Documents/GitHub/mini-market/backend/database.sqlite';
+const dbPath = '/mini-market/backend/database.sqlite';
 const db = new sqlite3.Database(dbPath);
 
 db.run("ALTER TABLE products ADD COLUMN instruction_template_id TEXT", function(err) {

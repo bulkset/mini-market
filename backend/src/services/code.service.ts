@@ -35,9 +35,15 @@ export interface ActivationResult {
     id: string;
     name: string;
     description: string | null;
+    description2: string | null;
+    productTitle1: string | null;
+    productTitle2: string | null;
     shortDescription: string | null;
     imageUrl: string | null;
     type: string;
+    gptType: string | null;
+    activationCDK: string | null;
+    requiresToken: boolean;
     instruction: string | null;
     instructionType?: string;
     files: Array<{
@@ -167,6 +173,8 @@ export async function recordSuccessAttempt(ip: string): Promise<void> {
  */
 export async function activateCode(code: string, userIp: string, userAgent?: string): Promise<ActivationResult> {
   try {
+    const normalizedCode = code.trim().toUpperCase();
+    console.info('Activation attempt', { code: normalizedCode, length: normalizedCode.length });
     const ipCheck = await checkIpBlocked(userIp);
     if (!ipCheck.isValid) {
       return {
@@ -176,7 +184,7 @@ export async function activateCode(code: string, userIp: string, userAgent?: str
     }
 
     const activationCode = await ActivationCode.findOne({
-      where: { code },
+      where: { code: normalizedCode },
       include: [
         {
           model: Product,
@@ -208,6 +216,7 @@ export async function activateCode(code: string, userIp: string, userAgent?: str
     }
 
     if (!activationCode) {
+      console.info('Activation code not found', { code: normalizedCode, length: normalizedCode.length });
       await recordFailedAttempt(userIp);
       return {
         success: false,
@@ -281,7 +290,8 @@ export async function activateCode(code: string, userIp: string, userAgent?: str
       {
         usageCount: activationCode.usageCount + 1,
         activatedAt: new Date(),
-        userIp: userIp
+        userIp: userIp,
+        status: 'used'
       },
       { where: { id: activationCode.id } }
     );
@@ -313,9 +323,15 @@ export async function activateCode(code: string, userIp: string, userAgent?: str
         id: product.id,
         name: product.name,
         description: product.description,
+        description2: (product as any).description2 || null,
+        productTitle1: (product as any).productTitle1 || null,
+        productTitle2: (product as any).productTitle2 || null,
         shortDescription: product.shortDescription,
         imageUrl: product.imageUrl,
         type: product.type,
+        requiresToken: product.type === 'chatgpt_token',
+        gptType: (product as any).gptType || null,
+        activationCDK: (product as any).activationCDK || null,
         instruction,
         instructionType,
         files: product.files ? product.files.map((f: any) => ({
@@ -373,10 +389,13 @@ export async function generateCodes(
   
   const codes: string[] = [];
   const chars = 'ABCDEFGHJKLMNPQRSTUVWXYZ23456789';
+  const normalizedPrefix = (prefix || '').trim().toUpperCase();
+  const randomLength = Math.max(length, 0);
+  console.info('Generate codes', { productId, count, prefix: normalizedPrefix, length: normalizedPrefix.length + randomLength, randomLength, codeType });
   
   for (let i = 0; i < count; i++) {
-    let code = prefix;
-    for (let j = 0; j < length; j++) {
+    let code = normalizedPrefix;
+    for (let j = 0; j < randomLength; j++) {
       code += chars.charAt(Math.floor(Math.random() * chars.length));
     }
     
@@ -420,15 +439,20 @@ export async function importCodesFromCSV(
   
   for (const row of data) {
     try {
-    const exists = await ActivationCode.findOne({ where: { code: row.code } });
+      const normalizedCode = row.code?.trim().toUpperCase();
+      if (!normalizedCode) {
+        errors.push('Пустой код');
+        continue;
+      }
+      const exists = await ActivationCode.findOne({ where: { code: normalizedCode } });
       if (exists) {
-        errors.push(`Код ${row.code} уже существует`);
+        errors.push(`Код ${normalizedCode} уже существует`);
         continue;
       }
       
       await ActivationCode.create({
         id: uuidv4(),
-        code: row.code,
+        code: normalizedCode,
         productId: row.productId || null,
         status: 'active',
         usageLimit: row.usageLimit || 1,
