@@ -320,12 +320,25 @@ export async function unblockCode(id: string) {
   return response.data;
 }
 
+export async function deleteCode(id: string) {
+  const response = await api.delete(`/admin/codes/${id}`);
+  return response.data;
+}
+
 // =====================================================
 // АДМИН API - СТАТИСТИКА
 // =====================================================
 
 export async function getStats() {
   const response = await api.get('/admin/stats');
+  return response.data;
+}
+
+export async function getActivations(params?: {
+  page?: number;
+  limit?: number;
+}) {
+  const response = await api.get('/admin/activations', { params });
   return response.data;
 }
 

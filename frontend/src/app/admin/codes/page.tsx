@@ -5,9 +5,9 @@ import { useRouter } from 'next/navigation';
 import Link from 'next/link';
 import { useQuery, useMutation, useQueryClient } from '@tanstack/react-query';
 import { 
-  LayoutDashboard, Package, Tag, Key, BarChart3, Settings, LogOut, Menu, X, Loader2, Plus, Search, Edit, Trash2, Download, Upload, FileText
+  LayoutDashboard, Package, Tag, Key, BarChart3, Settings, LogOut, Menu, X, Loader2, Plus, Search, Edit, Trash2, Download, Upload, FileText, History
 } from 'lucide-react';
-import { getCodes, getProducts, generateCodes, importCodes, exportCodes, blockCode, unblockCode, logout, getChatGPTCDKs } from '@/lib/api';
+import { getCodes, getProducts, generateCodes, importCodes, exportCodes, blockCode, unblockCode, deleteCode, logout, getChatGPTCDKs } from '@/lib/api';
 import clsx from 'clsx';
 
 const navigation = [
@@ -15,6 +15,7 @@ const navigation = [
   { name: 'Товары', href: '/admin/products', icon: Package },
   { name: 'Инструкции', href: '/admin/instructions', icon: FileText },
   { name: 'Коды', href: '/admin/codes', icon: Key },
+  { name: 'Активации', href: '/admin/activations', icon: History },
   { name: 'ChatGPT CDK', href: '/admin/chatgpt-cdks', icon: Key },
   { name: 'Статистика', href: '/admin/stats', icon: BarChart3 },
   { name: 'Настройки', href: '/admin/settings', icon: Settings },
@@ -61,6 +62,7 @@ export default function CodesPage() {
   });
   const blockMutation = useMutation({ mutationFn: blockCode, onSuccess: () => queryClient.invalidateQueries({ queryKey: ['codes'] }) });
   const unblockMutation = useMutation({ mutationFn: unblockCode, onSuccess: () => queryClient.invalidateQueries({ queryKey: ['codes'] }) });
+  const deleteMutation = useMutation({ mutationFn: deleteCode, onSuccess: () => queryClient.invalidateQueries({ queryKey: ['codes'] }) });
 
   const handleLogout = async () => { await logout(); router.push('/admin/login'); };
 
@@ -210,7 +212,16 @@ export default function CodesPage() {
                         <span className="text-xs text-gray-500">—</span>
                       )}
                     </td>
-                    <td className="px-6 py-4 text-center"><div className="flex justify-center gap-2">{code.status === 'active' ? <button onClick={() => blockMutation.mutate(code.id)} className="p-2 text-red-400 hover:bg-gray-700 rounded-lg">Блок</button> : code.status === 'blocked' ? <button onClick={() => unblockMutation.mutate(code.id)} className="p-2 text-green-400 hover:bg-gray-700 rounded-lg">Разблок</button> : null}</div></td>
+                    <td className="px-6 py-4 text-center">
+                      <div className="flex justify-center gap-2">
+                        {code.status === 'active' ? (
+                          <button onClick={() => blockMutation.mutate(code.id)} className="p-2 text-red-400 hover:bg-gray-700 rounded-lg">Блок</button>
+                        ) : code.status === 'blocked' ? (
+                          <button onClick={() => unblockMutation.mutate(code.id)} className="p-2 text-green-400 hover:bg-gray-700 rounded-lg">Разблок</button>
+                        ) : null}
+                        <button onClick={() => deleteMutation.mutate(code.id)} className="p-2 text-red-400 hover:bg-gray-700 rounded-lg">Удалить</button>
+                      </div>
+                    </td>
                   </tr>
                 )) : (
                   <tr><td colSpan={7} className="px-6 py-8 text-center text-gray-500">Коды не найдены</td></tr>

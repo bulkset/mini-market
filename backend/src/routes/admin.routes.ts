@@ -432,7 +432,8 @@ router.delete('/files/:id', async (req: AuthRequest, res: Response) => {
  */
 router.get('/codes', async (req: AuthRequest, res: Response) => {
   try {
-    const { page = 1, limit = 20, productId, status, search } = req.query;
+    const { page = 1, limit = 1000, productId, status, search } = req.query;
+    const safeLimit = Math.min(Number(limit) || 1000, 1000);
     
     const where: any = {};
     if (productId) where.productId = productId;
@@ -441,8 +442,8 @@ router.get('/codes', async (req: AuthRequest, res: Response) => {
 
     const codes = await ActivationCode.findAndCountAll({
       where,
-      limit: Number(limit),
-      offset: (Number(page) - 1) * Number(limit),
+      limit: safeLimit,
+      offset: (Number(page) - 1) * safeLimit,
       order: [['createdAt', 'DESC']],
       include: [
         { model: Product, as: 'product', attributes: ['id', 'name'] }
@@ -455,7 +456,7 @@ router.get('/codes', async (req: AuthRequest, res: Response) => {
         codes: codes.rows.map((c: any) => c.toJSON()),
         total: codes.count,
         page: Number(page),
-        limit: Number(limit)
+        limit: safeLimit
       }
     });
   } catch (error) {
@@ -674,6 +675,37 @@ router.post('/codes/:id/unblock', async (req: AuthRequest, res: Response) => {
   }
 });
 
+/**
+ * DELETE /api/v1/admin/codes/:id
+ * Удаление кода
+ */
+router.delete('/codes/:id', async (req: AuthRequest, res: Response) => {
+  try {
+    const { id } = req.params;
+    const code = await ActivationCode.findByPk(id);
+
+    if (!code) {
+      return res.status(404).json({ success: false, error: 'Код не найден' });
+    }
+
+    await Activation.destroy({ where: { codeId: id } });
+    await code.destroy();
+
+    await AdminLog.create({
+      id: uuidv4(),
+      userId: req.user?.id,
+      action: 'delete_code',
+      entityType: 'code',
+      entityId: id,
+      ipAddress: req.ip || undefined
+    });
+
+    res.json({ success: true });
+  } catch (error) {
+    res.status(500).json({ success: false, error: 'Ошибка удаления кода' });
+  }
+});
+
 // =====================================================
 // СТАТИСТИКА
 // =====================================================
@@ -740,6 +772,41 @@ router.get('/stats', async (req: AuthRequest, res: Response) => {
   } catch (error) {
     console.error('Stats error:', error);
     res.status(500).json({ success: false, error: 'Ошибка получения статистики' });
+  }
+});
+
+/**
+ * GET /api/v1/admin/activations
+ * История последних активаций
+ */
+router.get('/activations', async (req: AuthRequest, res: Response) => {
+  try {
+    const { page = 1, limit = 100 } = req.query;
+
+    const activations = await Activation.findAndCountAll({
+      limit: Number(limit),
+      offset: (Number(page) - 1) * Number(limit),
+      order: [['activatedAt', 'DESC']],
+      include: [
+        {
+          model: ActivationCode,
+          as: 'code',
+          include: [{ model: Product, as: 'product', attributes: ['id', 'name'] }]
+        }
+      ]
+    });
+
+    res.json({
+      success: true,
+      data: {
+        activations: activations.rows.map((a: any) => a.toJSON()),
+        total: activations.count,
+        page: Number(page),
+        limit: Number(limit)
+      }
+    });
+  } catch (error) {
+    res.status(500).json({ success: false, error: 'Ошибка получения истории активаций' });
   }
 });
 

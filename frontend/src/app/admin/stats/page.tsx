@@ -5,7 +5,7 @@ import { useRouter } from 'next/navigation';
 import Link from 'next/link';
 import { useQuery } from '@tanstack/react-query';
 import { 
-  LayoutDashboard, Package, Tag, Key, BarChart3, Settings, LogOut, Menu, X, Loader2, TrendingUp, CheckCircle, Clock, XCircle, FileText
+  LayoutDashboard, Package, Tag, Key, BarChart3, Settings, LogOut, Menu, X, Loader2, TrendingUp, CheckCircle, Clock, XCircle, FileText, History
 } from 'lucide-react';
 import { getStats, logout } from '@/lib/api';
 import clsx from 'clsx';
@@ -15,6 +15,7 @@ const navigation = [
   { name: 'Товары', href: '/admin/products', icon: Package },
   { name: 'Инструкции', href: '/admin/instructions', icon: FileText },
   { name: 'Коды', href: '/admin/codes', icon: Key },
+  { name: 'Активации', href: '/admin/activations', icon: History },
   { name: 'ChatGPT CDK', href: '/admin/chatgpt-cdks', icon: Key },
   { name: 'Статистика', href: '/admin/stats', icon: BarChart3 },
   { name: 'Настройки', href: '/admin/settings', icon: Settings },

@@ -5,7 +5,7 @@ import { useRouter } from 'next/navigation';
 import Link from 'next/link';
 import { useQuery, useMutation } from '@tanstack/react-query';
 import { 
-  LayoutDashboard, Package, Tag, Key, BarChart3, Settings, LogOut, Menu, X, Loader2, Zap, CheckCircle, AlertCircle, RefreshCw
+  LayoutDashboard, Package, Tag, Key, BarChart3, Settings, LogOut, Menu, X, Loader2, Zap, CheckCircle, AlertCircle, RefreshCw, History
 } from 'lucide-react';
 import { rechargeWithToken, checkRechargeStatus, logout } from '@/lib/api';
 import clsx from 'clsx';
@@ -15,6 +15,7 @@ const navigation = [
   { name: 'Товары', href: '/admin/products', icon: Package },
   { name: 'Активация', href: '/admin/recharge', icon: Zap },
   { name: 'Коды', href: '/admin/codes', icon: Key },
+  { name: 'Активации', href: '/admin/activations', icon: History },
   { name: 'Статистика', href: '/admin/stats', icon: BarChart3 },
   { name: 'Настройки', href: '/admin/settings', icon: Settings },
 ];
