@@ -32,6 +32,7 @@ export default function CodesPage() {
   const [showGenerateModal, setShowGenerateModal] = useState(false);
   const [showImportModal, setShowImportModal] = useState(false);
   const [selectedProductId, setSelectedProductId] = useState('');
+  const [lastGeneratedCodes, setLastGeneratedCodes] = useState<string[]>([]);
   const fileInputRef = useRef<HTMLInputElement>(null);
 
   useEffect(() => {
@@ -55,6 +56,11 @@ export default function CodesPage() {
       queryClient.invalidateQueries({ queryKey: ['codes'] });
       setShowGenerateModal(false);
       setGenerateError('');
+      const newCodes = data?.data?.codes || [];
+      const codeList = Array.isArray(newCodes)
+        ? newCodes.map((c: any) => (typeof c === 'string' ? c : c.code)).filter(Boolean)
+        : [];
+      setLastGeneratedCodes(codeList);
     },
     onError: (error: any) => {
       setGenerateError(error.response?.data?.error || error.message || 'Ошибка создания кодов');
@@ -129,6 +135,15 @@ export default function CodesPage() {
     }
   };
 
+  const handleCopyLastGenerated = async () => {
+    if (!lastGeneratedCodes.length) return;
+    try {
+      await navigator.clipboard.writeText(lastGeneratedCodes.join('\n'));
+    } catch (error) {
+      console.error('Copy last generated error:', error);
+    }
+  };
+
   return (
     <div className="min-h-screen bg-gradient-to-br from-gray-900 to-gray-800">
       <div className="lg:hidden">
@@ -164,6 +179,7 @@ export default function CodesPage() {
             <div><h1 className="text-3xl font-bold text-white">Коды активации</h1><p className="mt-1 text-gray-400">Управление кодами</p></div>
             <div className="flex gap-2">
               <button onClick={handleExport} className="inline-flex items-center gap-2 px-4 py-2 bg-green-600 text-white rounded-xl hover:bg-green-700"><Download className="w-5 h-5" />Экспорт</button>
+              <button onClick={handleCopyLastGenerated} disabled={!lastGeneratedCodes.length} className="inline-flex items-center gap-2 px-4 py-2 bg-indigo-500 text-white rounded-xl hover:bg-indigo-600 disabled:opacity-50">Скопировать новые</button>
               <button onClick={handleCopyAllCodes} className="inline-flex items-center gap-2 px-4 py-2 bg-gray-700 text-white rounded-xl hover:bg-gray-600">Скопировать все</button>
               <button onClick={() => setShowImportModal(true)} className="inline-flex items-center gap-2 px-4 py-2 bg-blue-600 text-white rounded-xl hover:bg-blue-700"><Upload className="w-5 h-5" />Импорт</button>
               <button onClick={() => setShowGenerateModal(true)} className="inline-flex items-center gap-2 px-4 py-2 bg-indigo-600 text-white rounded-xl hover:bg-indigo-700"><Plus className="w-5 h-5" />Создать</button>
