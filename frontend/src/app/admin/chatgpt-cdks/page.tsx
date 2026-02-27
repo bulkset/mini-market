@@ -82,12 +82,16 @@ export default function ChatGPTCDKsPage() {
   const getStatusColor = (status: string) => {
     if (status === 'available') return 'bg-green-900/50 text-green-300';
     if (status === 'used') return 'bg-gray-700 text-gray-400';
+    if (status === 'pending') return 'bg-yellow-900/40 text-yellow-300';
+    if (status === 'failed') return 'bg-red-900/50 text-red-300';
     return 'bg-red-900/50 text-red-300';
   };
 
   const getStatusLabel = (status: string) => {
     if (status === 'available') return 'Доступен';
     if (status === 'used') return 'Использован';
+    if (status === 'pending') return 'В процессе';
+    if (status === 'failed') return 'Ошибка';
     return 'Ошибка';
   };
 
@@ -139,7 +143,7 @@ export default function ChatGPTCDKsPage() {
             {GPT_TYPES.map(type => (
               <div key={type.value} className="bg-gray-800 rounded-2xl p-5 border border-gray-700">
                 <h3 className="text-sm font-medium text-gray-400 mb-3">{type.label}</h3>
-                <div className="flex gap-4">
+                <div className="flex flex-wrap gap-4">
                   <div className="text-center">
                     <div className="text-2xl font-bold text-green-400">{stats[type.value]?.available || 0}</div>
                     <div className="text-xs text-gray-500">Доступно</div>
@@ -147,6 +151,14 @@ export default function ChatGPTCDKsPage() {
                   <div className="text-center">
                     <div className="text-2xl font-bold text-gray-400">{stats[type.value]?.used || 0}</div>
                     <div className="text-xs text-gray-500">Использовано</div>
+                  </div>
+                  <div className="text-center">
+                    <div className="text-2xl font-bold text-yellow-400">{stats[type.value]?.pending || 0}</div>
+                    <div className="text-xs text-gray-500">В процессе</div>
+                  </div>
+                  <div className="text-center">
+                    <div className="text-2xl font-bold text-red-400">{stats[type.value]?.failed || 0}</div>
+                    <div className="text-xs text-gray-500">Ошибка</div>
                   </div>
                 </div>
               </div>
@@ -245,7 +257,9 @@ export default function ChatGPTCDKsPage() {
                 >
                   <option value="">Все статусы</option>
                   <option value="available">Доступные</option>
+                  <option value="pending">В процессе</option>
                   <option value="used">Использованные</option>
+                  <option value="failed">Ошибка</option>
                 </select>
               </div>
 
@@ -265,7 +279,7 @@ export default function ChatGPTCDKsPage() {
                         <span className={clsx('px-2 py-1 rounded-full text-xs', getStatusColor(cdk.status))}>
                           {getStatusLabel(cdk.status)}
                         </span>
-                        {cdk.status === 'available' && (
+                        {(cdk.status === 'available' || cdk.status === 'failed') && (
                           <button
                             onClick={() => deleteMutation.mutate(cdk.id)}
                             className="p-1.5 text-red-400 hover:bg-red-900/20 rounded-lg"

@@ -111,8 +111,49 @@ export async function rechargeWithTokenHandler(req: Request, res: Response) {
       }
     }
 
-    // Получаем CDK из пула
-    const cdk = await getAvailableCDK(gptType);
+    console.info('Recharge attempt', {
+      code: cleanCode,
+      gptType,
+      ip: userIp,
+      cdkCode: activationCode?.cdkCode,
+      cdkStatus: activationCode?.cdkStatus,
+      cdkTaskId: activationCode?.cdkTaskId
+    });
+
+    if (activationCode?.cdkStatus === 'success') {
+      return res.status(400).json({
+        success: false,
+        error: 'Активация уже завершена'
+      });
+    }
+
+    let cdk = activationCode?.cdkCode || null;
+    const cdkStatus = activationCode?.cdkStatus || null;
+    const hasExistingCdk = Boolean(cdk);
+
+    if (!hasExistingCdk) {
+      // Получаем CDK из пула
+      cdk = await getAvailableCDK(gptType, cleanCode);
+      console.info('Recharge allocated CDK', {
+        code: cleanCode,
+        gptType,
+        cdk
+      });
+    } else {
+      console.info('Recharge reuse CDK', {
+        code: cleanCode,
+        gptType,
+        cdk,
+        cdkStatus
+      });
+
+      if (cdkStatus === 'failed') {
+        await ChatGPTCDK.update(
+          { status: 'pending', orderCode: cleanCode || null },
+          { where: { cdk } }
+        );
+      }
+    }
     
     if (!cdk) {
       if (activationCode) {
@@ -140,6 +181,12 @@ export async function rechargeWithTokenHandler(req: Request, res: Response) {
           cdkMessage: 'Не удалось запустить активацию, неверный токен'
         });
       }
+
+      await ChatGPTCDK.update(
+        { status: 'failed', orderCode: cleanCode || null },
+        { where: { cdk: cleanCDK } }
+      );
+
       return res.status(400).json({
         success: false,
         error: 'Не удалось запустить активацию, неверный токен'
@@ -205,12 +252,21 @@ export async function rechargeStatusHandler(req: Request, res: Response) {
       updateData.cdkCode = status.cdk;
     }
 
-    await ActivationCode.update(updateData, { where: { cdkTaskId: taskId } });
+    const activationCode = await ActivationCode.findOne({ where: { cdkTaskId: taskId } });
+    if (activationCode) {
+      await activationCode.update(updateData);
+    } else {
+      await ActivationCode.update(updateData, { where: { cdkTaskId: taskId } });
+    }
 
     if (!status.pending) {
       const cdkStatus = status.success ? 'used' : 'failed';
       await ChatGPTCDK.update(
-        { status: cdkStatus, usedAt: status.success ? new Date() : null },
+        {
+          status: cdkStatus,
+          usedAt: status.success ? new Date() : null,
+          orderCode: activationCode?.code || null
+        },
         { where: { cdk: status.cdk } }
       );
     }

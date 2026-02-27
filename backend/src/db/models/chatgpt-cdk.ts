@@ -33,7 +33,7 @@ export const ChatGPTCDK = sequelize.define('ChatGPTCDK', {
   timestamps: true
 });
 
-export async function getAvailableCDK(gptType: string): Promise<string | null> {
+export async function getAvailableCDK(gptType: string, orderCode?: string | null): Promise<string | null> {
   const cdk = await ChatGPTCDK.findOne({
     where: {
       gptType,
@@ -44,7 +44,11 @@ export async function getAvailableCDK(gptType: string): Promise<string | null> {
   
   if (!cdk) return null;
   
-  await (cdk as any).update({ status: 'pending', usedAt: null });
+  await (cdk as any).update({
+    status: 'pending',
+    usedAt: null,
+    orderCode: orderCode || null
+  });
   return (cdk as any).cdk;
 }
 
