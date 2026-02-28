@@ -7,7 +7,7 @@ import { useQuery, useMutation, useQueryClient } from '@tanstack/react-query';
 import { 
   LayoutDashboard, Package, Tag, Key, BarChart3, Settings, LogOut, Menu, X, Loader2, Plus, Search, Edit, Trash2, Download, Upload, FileText, History
 } from 'lucide-react';
-import { getCodes, getProducts, generateCodes, importCodes, exportCodes, blockCode, unblockCode, deleteCode, logout, getChatGPTCDKs } from '@/lib/api';
+import { getCodes, getProducts, generateCodes, importCodes, importPairedCodes, exportCodes, blockCode, unblockCode, deleteCode, logout, getChatGPTCDKs } from '@/lib/api';
 import clsx from 'clsx';
 
 const navigation = [
@@ -31,7 +31,13 @@ export default function CodesPage() {
   const [productFilterId, setProductFilterId] = useState('');
   const [showGenerateModal, setShowGenerateModal] = useState(false);
   const [showImportModal, setShowImportModal] = useState(false);
+  const [showPairedImportModal, setShowPairedImportModal] = useState(false);
   const [selectedProductId, setSelectedProductId] = useState('');
+  const [selectedPartnerProductId, setSelectedPartnerProductId] = useState('');
+  const [primaryCodesText, setPrimaryCodesText] = useState('');
+  const [partnerCodesText, setPartnerCodesText] = useState('');
+  const [pairedImportError, setPairedImportError] = useState('');
+  const [pairedImportResult, setPairedImportResult] = useState<{ imported: number; errors: string[] } | null>(null);
   const [lastGeneratedCodes, setLastGeneratedCodes] = useState<string[]>([]);
   const fileInputRef = useRef<HTMLInputElement>(null);
 
@@ -86,7 +92,7 @@ export default function CodesPage() {
   };
 
   const cdksStats = cdksData?.data?.stats || {};
-  const productMap = new Map(
+  const productMap = new Map<string, any>(
     (productsData?.data?.products || []).map((p: any) => [p.id, p])
   );
   const selectedProduct = selectedProductId ? (productMap.get(selectedProductId) as any) : null;
@@ -107,6 +113,39 @@ export default function CodesPage() {
       } catch (error) {
         console.error('Import error:', error);
       }
+    }
+  };
+
+  const handlePairedImport = async (e: React.FormEvent<HTMLFormElement>) => {
+    e.preventDefault();
+    setPairedImportError('');
+    setPairedImportResult(null);
+
+    if (!selectedProductId || !selectedPartnerProductId) {
+      setPairedImportError('Выберите оба товара');
+      return;
+    }
+
+    if (!primaryCodesText.trim() || !partnerCodesText.trim()) {
+      setPairedImportError('Нужны оба списка кодов');
+      return;
+    }
+
+    try {
+      const response = await importPairedCodes({
+        productId: selectedProductId,
+        partnerProductId: selectedPartnerProductId,
+        primaryCodesText,
+        partnerCodesText
+      });
+      if (response.success) {
+        setPairedImportResult(response.data);
+        queryClient.invalidateQueries({ queryKey: ['codes'] });
+      } else {
+        setPairedImportError(response.error || 'Ошибка импорта');
+      }
+    } catch (error: any) {
+      setPairedImportError(error.response?.data?.error || error.message || 'Ошибка импорта');
     }
   };
 
@@ -182,6 +221,7 @@ export default function CodesPage() {
               <button onClick={handleCopyLastGenerated} disabled={!lastGeneratedCodes.length} className="inline-flex items-center gap-2 px-4 py-2 bg-indigo-500 text-white rounded-xl hover:bg-indigo-600 disabled:opacity-50">Скопировать новые</button>
               <button onClick={handleCopyAllCodes} className="inline-flex items-center gap-2 px-4 py-2 bg-gray-700 text-white rounded-xl hover:bg-gray-600">Скопировать все</button>
               <button onClick={() => setShowImportModal(true)} className="inline-flex items-center gap-2 px-4 py-2 bg-blue-600 text-white rounded-xl hover:bg-blue-700"><Upload className="w-5 h-5" />Импорт</button>
+              <button onClick={() => setShowPairedImportModal(true)} className="inline-flex items-center gap-2 px-4 py-2 bg-purple-600 text-white rounded-xl hover:bg-purple-700">Парный импорт</button>
               <button onClick={() => setShowGenerateModal(true)} className="inline-flex items-center gap-2 px-4 py-2 bg-indigo-600 text-white rounded-xl hover:bg-indigo-700"><Plus className="w-5 h-5" />Создать</button>
             </div>
           </div>
@@ -207,11 +247,15 @@ export default function CodesPage() {
 
           <div className="bg-gray-800 rounded-2xl shadow-lg overflow-hidden border border-gray-700">
             {isLoading ? <div className="flex justify-center h-64"><Loader2 className="w-8 h-8 animate-spin text-indigo-600" /></div> : (
-              <div className="overflow-x-auto"><table className="w-full"><thead className="bg-gray-700/50"><tr><th className="px-6 py-4 text-left text-xs font-medium text-gray-400 uppercase">Код</th><th className="px-6 py-4 text-left text-xs font-medium text-gray-400 uppercase">Товар</th><th className="px-6 py-4 text-center text-xs font-medium text-gray-400 uppercase">Статус</th><th className="px-6 py-4 text-center text-xs font-medium text-gray-400 uppercase">Лимит</th><th className="px-6 py-4 text-center text-xs font-medium text-gray-400 uppercase">CDK</th><th className="px-6 py-4 text-center text-xs font-medium text-gray-400 uppercase">CDK статус</th><th className="px-6 py-4 text-center text-xs font-medium text-gray-400 uppercase">Действия</th></tr></thead><tbody className="divide-y divide-gray-700">
+              <div className="overflow-x-auto"><table className="w-full"><thead className="bg-gray-700/50"><tr><th className="px-6 py-4 text-left text-xs font-medium text-gray-400 uppercase">Код</th><th className="px-6 py-4 text-left text-xs font-medium text-gray-400 uppercase">Товар 1</th><th className="px-6 py-4 text-left text-xs font-medium text-gray-400 uppercase">Товар 2</th><th className="px-6 py-4 text-left text-xs font-medium text-gray-400 uppercase">Код товара 2</th><th className="px-6 py-4 text-center text-xs font-medium text-gray-400 uppercase">Статус</th><th className="px-6 py-4 text-center text-xs font-medium text-gray-400 uppercase">Лимит</th><th className="px-6 py-4 text-center text-xs font-medium text-gray-400 uppercase">CDK</th><th className="px-6 py-4 text-center text-xs font-medium text-gray-400 uppercase">CDK статус</th><th className="px-6 py-4 text-center text-xs font-medium text-gray-400 uppercase">Действия</th></tr></thead><tbody className="divide-y divide-gray-700">
                 {codesData?.data?.codes?.length > 0 ? codesData.data.codes.map((code: any) => (
                   <tr key={code.id} className="hover:bg-gray-700/30">
                     <td className="px-6 py-4 font-mono text-sm text-white">{code.code}</td>
                     <td className="px-6 py-4 text-gray-400">{code.product?.name || '—'}</td>
+                    <td className="px-6 py-4 text-gray-400">
+                      {code.metadata?.partnerProductId ? (productMap.get(code.metadata.partnerProductId)?.name || '—') : '—'}
+                    </td>
+                    <td className="px-6 py-4 font-mono text-xs text-gray-300">{code.metadata?.partnerCode || '—'}</td>
                     <td className="px-6 py-4 text-center">
                       <span className={clsx('px-2 py-1 rounded-full text-xs', code.status === 'active' ? 'bg-green-900/50 text-green-300' : code.status === 'used' ? 'bg-blue-900/50 text-blue-300' : 'bg-red-900/50 text-red-300')}>
                         {code.status === 'active' ? 'Активен' : code.status === 'used' ? 'Использован' : 'Заблокирован'}
@@ -240,7 +284,7 @@ export default function CodesPage() {
                     </td>
                   </tr>
                 )) : (
-                  <tr><td colSpan={7} className="px-6 py-8 text-center text-gray-500">Коды не найдены</td></tr>
+                  <tr><td colSpan={9} className="px-6 py-8 text-center text-gray-500">Коды не найдены</td></tr>
                 )}
               </tbody></table></div>)}
           </div>
@@ -331,6 +375,96 @@ export default function CodesPage() {
               <div className="flex gap-3 pt-4">
                 <button type="button" onClick={() => setShowImportModal(false)} className="flex-1 px-4 py-3 border border-gray-600 text-gray-300 rounded-xl hover:bg-gray-800">Отмена</button>
                 <button type="submit" className="flex-1 px-4 py-3 bg-blue-600 text-white rounded-xl hover:bg-blue-700">Импортировать</button>
+              </div>
+            </form>
+          </div>
+        </div>
+      )}
+
+      {showPairedImportModal && (
+        <div className="fixed inset-0 z-50 flex items-center justify-center p-4 bg-black/70 backdrop-blur-sm">
+          <div className="bg-gray-900 rounded-2xl w-full max-w-3xl border border-gray-700 shadow-2xl">
+            <div className="flex items-center justify-between p-6 border-b border-gray-700">
+              <h2 className="text-xl font-semibold text-white">Парный импорт (товар 1 + товар 2)</h2>
+              <button onClick={() => { setShowPairedImportModal(false); setPairedImportError(''); setPairedImportResult(null); }} className="p-2 hover:bg-gray-800 rounded-lg text-gray-400 hover:text-white"><X className="w-5 h-5" /></button>
+            </div>
+            <form onSubmit={handlePairedImport} className="p-6 space-y-4">
+              <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+                <div>
+                  <label className="block text-sm font-medium mb-2 text-gray-300">Товар 1 (основной) *</label>
+                  <select
+                    value={selectedProductId}
+                    onChange={(e) => setSelectedProductId(e.target.value)}
+                    className="w-full px-4 py-3 bg-gray-800 border border-gray-700 rounded-xl text-white"
+                    required
+                  >
+                    <option value="">Выберите товар</option>
+                    {productsData?.data?.products?.map((p: any) => (
+                      <option key={p.id} value={p.id}>{p.name}</option>
+                    ))}
+                  </select>
+                </div>
+                <div>
+                  <label className="block text-sm font-medium mb-2 text-gray-300">Товар 2 (партнёр) *</label>
+                  <select
+                    value={selectedPartnerProductId}
+                    onChange={(e) => setSelectedPartnerProductId(e.target.value)}
+                    className="w-full px-4 py-3 bg-gray-800 border border-gray-700 rounded-xl text-white"
+                    required
+                  >
+                    <option value="">Выберите товар</option>
+                    {productsData?.data?.products?.map((p: any) => (
+                      <option key={p.id} value={p.id}>{p.name}</option>
+                    ))}
+                  </select>
+                </div>
+              </div>
+
+              <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+                <div>
+                  <label className="block text-sm font-medium mb-2 text-gray-300">Список кодов товара 1</label>
+                  <textarea
+                    value={primaryCodesText}
+                    onChange={(e) => setPrimaryCodesText(e.target.value)}
+                    rows={10}
+                    placeholder="52362b72-afc1-4f4d-a2a0-34569c1ecb5e\n5236c174-a9f8-4e6d-9707-917db32e2513"
+                    className="w-full px-4 py-3 bg-gray-800 border border-gray-700 rounded-xl text-white font-mono text-sm resize-none"
+                  />
+                  <p className="text-xs text-gray-500 mt-1">Строк: {primaryCodesText.split('\n').filter(Boolean).length}</p>
+                </div>
+                <div>
+                  <label className="block text-sm font-medium mb-2 text-gray-300">Список кодов товара 2</label>
+                  <textarea
+                    value={partnerCodesText}
+                    onChange={(e) => setPartnerCodesText(e.target.value)}
+                    rows={10}
+                    placeholder="STU55K1JYCG\nSTUDUHO3Q0K"
+                    className="w-full px-4 py-3 bg-gray-800 border border-gray-700 rounded-xl text-white font-mono text-sm resize-none"
+                  />
+                  <p className="text-xs text-gray-500 mt-1">Строк: {partnerCodesText.split('\n').filter(Boolean).length}</p>
+                </div>
+              </div>
+
+              {pairedImportError && (
+                <div className="p-3 bg-red-900/20 border border-red-500/30 rounded-xl text-red-400 text-sm">
+                  {pairedImportError}
+                </div>
+              )}
+
+              {pairedImportResult && (
+                <div className="p-4 rounded-xl bg-green-900/20 border border-green-500/30">
+                  <div className="text-green-400 font-medium">Загружено: {pairedImportResult.imported}</div>
+                  {pairedImportResult.errors?.length > 0 && (
+                    <ul className="mt-2 text-xs text-gray-400 space-y-1 max-h-24 overflow-y-auto">
+                      {pairedImportResult.errors.map((e, i) => <li key={i}>{e}</li>)}
+                    </ul>
+                  )}
+                </div>
+              )}
+
+              <div className="flex gap-3 pt-4">
+                <button type="button" onClick={() => { setShowPairedImportModal(false); setPairedImportError(''); setPairedImportResult(null); }} className="flex-1 px-4 py-3 border border-gray-600 text-gray-300 rounded-xl hover:bg-gray-800">Отмена</button>
+                <button type="submit" className="flex-1 px-4 py-3 bg-purple-600 text-white rounded-xl hover:bg-purple-700">Импортировать</button>
               </div>
             </form>
           </div>

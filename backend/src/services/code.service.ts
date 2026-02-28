@@ -54,8 +54,34 @@ export interface ActivationResult {
       mimeType: string | null;
       fileType: string | null;
     }>;
+    partnerCode?: string | null;
+    partnerProduct?: {
+      id: string;
+      name: string;
+      description: string | null;
+      description2: string | null;
+      productTitle1: string | null;
+      productTitle2: string | null;
+      shortDescription: string | null;
+      imageUrl: string | null;
+      type: string;
+      gptType: string | null;
+      requiresToken: boolean;
+      instruction: string | null;
+      instructionType?: string;
+      files: Array<{
+        id: string;
+        fileName: string;
+        originalName: string;
+        filePath: string;
+        mimeType: string | null;
+        fileType: string | null;
+      }>;
+    };
   };
 }
+
+type PartnerProductPayload = NonNullable<ActivationResult['product']>['partnerProduct'];
 
 export interface CodeValidationResult {
   isValid: boolean;
@@ -317,6 +343,89 @@ export async function activateCode(code: string, userIp: string, userAgent?: str
       }
     }
     
+    let partnerProductPayload: PartnerProductPayload | null = null;
+    let partnerCode: string | null = null;
+
+    const partnerProductId = activationCode.metadata && (activationCode.metadata as any).partnerProductId
+      ? String((activationCode.metadata as any).partnerProductId)
+      : null;
+    const rawPartnerCode = activationCode.metadata && (activationCode.metadata as any).partnerCode
+      ? String((activationCode.metadata as any).partnerCode)
+      : null;
+
+    if (partnerProductId) {
+      const partner = await Product.findByPk(partnerProductId, {
+        include: [
+          {
+            model: ProductFile,
+            as: 'files',
+            where: { isActive: true },
+            required: false
+          },
+          {
+            model: InstructionTemplate,
+            as: 'instructionTemplates',
+            required: false
+          }
+        ]
+      });
+
+      if (partner) {
+        const partnerEntity: any = partner as any;
+        let partnerInstruction = partnerEntity.instruction;
+        if (!partnerInstruction && partnerEntity.type === 'text_instruction') {
+          partnerInstruction = partnerEntity.description;
+        }
+
+        if (partnerEntity.instructionTemplates && partnerEntity.instructionTemplates.length > 0) {
+          let template = partnerEntity.instructionTemplates.find((t: any) => t.isActive);
+          if (template && template.content) {
+            partnerInstruction = template.content;
+          }
+        }
+
+        if (!partnerInstruction && partnerEntity.description) {
+          partnerInstruction = partnerEntity.description;
+        }
+
+        let partnerInstructionType = 'simple';
+        if (partnerEntity.instructionTemplates && partnerEntity.instructionTemplates.length > 0) {
+          const activeTemplate = partnerEntity.instructionTemplates.find((t: any) => t.isActive);
+          if (activeTemplate && activeTemplate.type) {
+            partnerInstructionType = activeTemplate.type;
+          }
+        }
+
+        partnerProductPayload = {
+          id: partnerEntity.id,
+          name: partnerEntity.name,
+          description: partnerEntity.description,
+          description2: partnerEntity.description2 || null,
+          productTitle1: partnerEntity.productTitle1 || null,
+          productTitle2: partnerEntity.productTitle2 || null,
+          shortDescription: partnerEntity.shortDescription,
+          imageUrl: partnerEntity.imageUrl,
+          type: partnerEntity.type,
+          requiresToken: partnerEntity.type === 'chatgpt_token',
+          gptType: partnerEntity.gptType || null,
+          instruction: partnerInstruction,
+          instructionType: partnerInstructionType,
+          files: partnerEntity.files ? partnerEntity.files.map((f: any) => ({
+            id: f.id,
+            fileName: f.fileName,
+            originalName: f.originalName,
+            filePath: f.filePath,
+            mimeType: f.mimeType,
+            fileType: f.fileType
+          })) : []
+        };
+      }
+    }
+
+    if (rawPartnerCode) {
+      partnerCode = rawPartnerCode;
+    }
+
     return {
       success: true,
       product: {
@@ -341,7 +450,9 @@ export async function activateCode(code: string, userIp: string, userAgent?: str
           filePath: f.filePath,
           mimeType: f.mimeType,
           fileType: f.fileType
-        })) : []
+        })) : [],
+        partnerCode,
+        partnerProduct: partnerProductPayload || undefined
       }
     };
 

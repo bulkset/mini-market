@@ -209,6 +209,27 @@ export default function Home() {
                 )}
               </div>
 
+              {product.partnerProduct && (
+                <div className="px-6 pb-4">
+                  <div className="flex items-center gap-2 mb-3">
+                    <div className="w-1 h-4 bg-gradient-to-b from-emerald-500 to-green-500 rounded-full" />
+                    <h3 className="text-sm font-semibold text-gray-300">Товар 2</h3>
+                  </div>
+                  <div className="p-4 bg-gradient-to-r from-emerald-500/10 to-green-500/10 rounded-xl border border-emerald-500/20">
+                    <p className="text-gray-200 font-semibold">{product.partnerProduct.name}</p>
+                    {product.partnerProduct.shortDescription && (
+                      <p className="text-gray-400 mt-1 text-sm">{product.partnerProduct.shortDescription}</p>
+                    )}
+                    {product.partnerCode && (
+                      <div className="mt-3 p-3 bg-gray-900/50 border border-gray-700/50 rounded-lg">
+                        <div className="text-xs text-gray-400 mb-1">Код товара 2</div>
+                        <div className="font-mono text-sm text-white break-all">{product.partnerCode}</div>
+                      </div>
+                    )}
+                  </div>
+                </div>
+              )}
+
               {/* Product Image */}
               {product.imageUrl && (
                 <div className="px-6 pb-4">

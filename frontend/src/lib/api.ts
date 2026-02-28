@@ -299,6 +299,16 @@ export async function importCodes(file: File) {
   return response.data;
 }
 
+export async function importPairedCodes(data: {
+  productId: string;
+  partnerProductId: string;
+  primaryCodesText: string;
+  partnerCodesText: string;
+}) {
+  const response = await api.post('/admin/codes/import-paired', data);
+  return response.data;
+}
+
 export async function exportCodes(params?: {
   productId?: string;
   status?: string;

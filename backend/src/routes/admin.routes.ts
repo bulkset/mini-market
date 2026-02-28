@@ -540,9 +540,9 @@ router.post('/codes/generate', async (req: AuthRequest, res: Response) => {
 });
 
 /**
- * POST /api/v1/admin/codes/import
- * Импорт кодов из CSV
- */
+  * POST /api/v1/admin/codes/import
+  * Импорт кодов из CSV
+  */
 router.post('/codes/import', upload.single('file'), async (req: AuthRequest, res: Response) => {
   try {
     if (!req.file) {
@@ -581,6 +581,97 @@ router.post('/codes/import', upload.single('file'), async (req: AuthRequest, res
     });
   } catch (error) {
     res.status(500).json({ success: false, error: 'Ошибка импорта кодов' });
+  }
+});
+
+/**
+ * POST /api/v1/admin/codes/import-paired
+ * Импорт парных кодов (товар1 + товар2) из двух текстовых блоков
+ */
+router.post('/codes/import-paired', async (req: AuthRequest, res: Response) => {
+  try {
+    const { productId, partnerProductId, primaryCodesText, partnerCodesText } = req.body || {};
+
+    if (!productId || !partnerProductId) {
+      return res.status(400).json({ success: false, error: 'Нужны productId и partnerProductId' });
+    }
+
+    if (!primaryCodesText || !partnerCodesText) {
+      return res.status(400).json({ success: false, error: 'Нужны оба списка кодов' });
+    }
+
+    const product = await Product.findByPk(productId);
+    const partnerProduct = await Product.findByPk(partnerProductId);
+    if (!product || !partnerProduct) {
+      return res.status(404).json({ success: false, error: 'Товар не найден' });
+    }
+
+    const primaryLines = String(primaryCodesText)
+      .split('\n')
+      .map((line: string) => line.trim())
+      .filter(Boolean);
+    const partnerLines = String(partnerCodesText)
+      .split('\n')
+      .map((line: string) => line.trim())
+      .filter(Boolean);
+
+    if (primaryLines.length !== partnerLines.length) {
+      return res.status(400).json({
+        success: false,
+        error: `Количество строк не совпадает: товар1=${primaryLines.length}, товар2=${partnerLines.length}`
+      });
+    }
+
+    const errors: string[] = [];
+    let imported = 0;
+
+    for (let i = 0; i < primaryLines.length; i += 1) {
+      const primaryCode = primaryLines[i].trim().toUpperCase();
+      const partnerCode = partnerLines[i].trim().toUpperCase();
+
+      if (!primaryCode) {
+        errors.push(`Пустой код в строке ${i + 1}`);
+        continue;
+      }
+
+      const exists = await ActivationCode.findOne({ where: { code: primaryCode } });
+      if (exists) {
+        errors.push(`Код ${primaryCode} уже существует (строка ${i + 1})`);
+        continue;
+      }
+
+      await ActivationCode.create({
+        id: uuidv4(),
+        code: primaryCode,
+        productId,
+        status: 'active',
+        usageLimit: 1,
+        usageCount: 0,
+        expiresAt: null,
+        codeType: null,
+        createdBy: req.user?.id || null,
+        metadata: {
+          partnerProductId,
+          partnerCode
+        }
+      });
+
+      imported += 1;
+    }
+
+    await AdminLog.create({
+      id: uuidv4(),
+      userId: req.user?.id,
+      action: 'import_paired_codes',
+      entityType: 'codes',
+      newData: { imported, errors, productId, partnerProductId },
+      ipAddress: req.ip || undefined
+    });
+
+    return res.json({ success: true, data: { imported, errors } });
+  } catch (error) {
+    console.error('Import paired codes error:', error);
+    return res.status(500).json({ success: false, error: 'Ошибка импорта парных кодов' });
   }
 });
 
@@ -714,9 +805,9 @@ router.delete('/codes/:id', async (req: AuthRequest, res: Response) => {
  * GET /api/v1/admin/stats
  * Общая статистика
  */
-router.get('/stats', async (req: AuthRequest, res: Response) => {
-  try {
-    const totalCodes = await ActivationCode.count();
+  router.get('/stats', async (req: AuthRequest, res: Response) => {
+    try {
+      const totalCodes = await ActivationCode.count();
     
     const usedCodes = await ActivationCode.count({
       where: {
@@ -742,6 +833,20 @@ router.get('/stats', async (req: AuthRequest, res: Response) => {
       raw: false
     });
 
+    const todayStart = new Date();
+    todayStart.setHours(0, 0, 0, 0);
+    const todayEnd = new Date();
+    todayEnd.setHours(23, 59, 59, 999);
+
+    const todayActivations = await Activation.count({
+      where: {
+        activatedAt: {
+          [Op.gte]: todayStart,
+          [Op.lte]: todayEnd
+        }
+      }
+    });
+
     const dateStats = await Activation.findAll({
       attributes: [
         [sequelize.fn('DATE', sequelize.col('activated_at')), 'date'],
@@ -756,19 +861,20 @@ router.get('/stats', async (req: AuthRequest, res: Response) => {
       order: [[sequelize.fn('DATE', sequelize.col('activated_at')), 'ASC']]
     });
 
-    res.json({
-      success: true,
-      data: {
-        codes: {
-          total: totalCodes,
-          used: usedCodes,
-          active: activeCodes,
-          blocked: blockedCodes
-        },
-        byProduct: productStats,
-        byDate: dateStats
-      }
-    });
+      res.json({
+        success: true,
+        data: {
+          codes: {
+            total: totalCodes,
+            used: usedCodes,
+            active: activeCodes,
+            blocked: blockedCodes,
+            today: todayActivations
+          },
+          byProduct: productStats,
+          byDate: dateStats
+        }
+      });
   } catch (error) {
     console.error('Stats error:', error);
     res.status(500).json({ success: false, error: 'Ошибка получения статистики' });

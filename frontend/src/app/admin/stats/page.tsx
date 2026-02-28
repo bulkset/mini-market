@@ -72,8 +72,8 @@ export default function StatsPage() {
 
           {isLoading ? <div className="flex justify-center h-64"><Loader2 className="w-8 h-8 animate-spin text-indigo-600" /></div> : (
             <div className="space-y-8">
-              <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-6">
-                {[{ name: 'Всего кодов', value: stats?.data?.codes?.total || 0, color: 'from-blue-500 to-blue-600', icon: Key }, { name: 'Использовано', value: stats?.data?.codes?.used || 0, color: 'from-green-500 to-green-600', icon: CheckCircle }, { name: 'Активных', value: stats?.data?.codes?.active || 0, color: 'from-yellow-500 to-yellow-600', icon: Clock }, { name: 'Заблокировано', value: stats?.data?.codes?.blocked || 0, color: 'from-red-500 to-red-600', icon: XCircle }].map((stat) => (
+              <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-5 gap-6">
+                {[{ name: 'Всего кодов', value: stats?.data?.codes?.total || 0, color: 'from-blue-500 to-blue-600', icon: Key }, { name: 'Использовано', value: stats?.data?.codes?.used || 0, color: 'from-green-500 to-green-600', icon: CheckCircle }, { name: 'Активных', value: stats?.data?.codes?.active || 0, color: 'from-yellow-500 to-yellow-600', icon: Clock }, { name: 'Заблокировано', value: stats?.data?.codes?.blocked || 0, color: 'from-red-500 to-red-600', icon: XCircle }, { name: 'Активаций сегодня', value: stats?.data?.codes?.today || 0, color: 'from-indigo-500 to-indigo-600', icon: TrendingUp }].map((stat) => (
                     <div key={stat.name} className="bg-gray-800 rounded-2xl p-6 shadow-lg border border-gray-700">
                       <div className="flex items-center justify-between">
                         <div className={clsx('w-14 h-14 rounded-xl flex items-center justify-center bg-gradient-to-br', stat.color)}><stat.icon className="w-7 h-7 text-white" /></div>
