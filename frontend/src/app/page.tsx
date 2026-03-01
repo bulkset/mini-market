@@ -16,6 +16,7 @@ export default function Home() {
   const [showTokenInput, setShowTokenInput] = useState(false);
   const [taskId, setTaskId] = useState('');
   const [rechargeStatus, setRechargeStatus] = useState<any>(null);
+  const [rechargeStartTs, setRechargeStartTs] = useState<number>(0);
 
   useEffect(() => {
     getPublicSettings().then((data) => {
@@ -52,6 +53,7 @@ export default function Home() {
     onSuccess: (data) => {
       if (data.success) {
         setTaskId(data.data.taskId);
+        setRechargeStartTs(Date.now());
         setShowTokenInput(false);
       } else {
         setError(data.error || 'Ошибка активации');
@@ -409,8 +411,17 @@ export default function Home() {
                   </div>
                 ) : taskId && rechargeStatus ? (
                   /* Результат активации */
-                  <div className={`p-4 rounded-xl border ${rechargeStatus.success ? 'bg-green-900/20 border-green-500/30' : 'bg-red-900/20 border-red-500/30'}`}>
-                    {rechargeStatus.success ? (
+                  (rechargeStatus.pending || (!rechargeStatus.success && Date.now() - rechargeStartTs < 15000)) ? (
+                    <div className="p-4 bg-indigo-900/20 border border-indigo-500/30 rounded-xl">
+                      <div className="flex items-center gap-3 text-indigo-400">
+                        <Loader2 className="w-5 h-5 animate-spin" />
+                        <span className="font-medium">Активация в процессе...</span>
+                      </div>
+                      <p className="text-sm text-gray-400 mt-2">Пожалуйста, подождите. Это может занять несколько секунд.</p>
+                    </div>
+                  ) : (
+                    <div className={`p-4 rounded-xl border ${rechargeStatus.success ? 'bg-green-900/20 border-green-500/30' : 'bg-red-900/20 border-red-500/30'}`}>
+                      {rechargeStatus.success ? (
                       <div>
                         <div className="flex items-center gap-3 text-green-400 mb-2">
                           <CheckCircle className="w-5 h-5" />
@@ -427,7 +438,8 @@ export default function Home() {
                         <p className="text-sm text-gray-400">{rechargeStatus.message || 'Не удалось активировать подписку. Обратитесь в поддержку.'}</p>
                       </div>
                     )}
-                  </div>
+                    </div>
+                  )
                 ) : !product?.requiresToken ? (
                   /* Обычный товар - кнопка активировать ещё */
                   <button
