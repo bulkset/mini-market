@@ -3,7 +3,7 @@ import {sequelize} from '../connection.js';
 
 export const ChatGPTCDK = sequelize.define('ChatGPTCDK', {
   id: {
-    type: DataTypes.UUID,
+    type: DataTypes.TEXT,
     defaultValue: DataTypes.UUIDV4,
     primaryKey: true
   },

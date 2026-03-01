@@ -30,7 +30,7 @@ export class User extends Model<UserAttributes, UserCreationAttributes> implemen
 User.init(
   {
     id: {
-      type: DataTypes.UUID,
+      type: DataTypes.TEXT,
       defaultValue: DataTypes.UUIDV4,
       primaryKey: true,
     },
@@ -111,7 +111,7 @@ export class Category extends Model<CategoryAttributes, CategoryCreationAttribut
 Category.init(
   {
     id: {
-      type: DataTypes.UUID,
+      type: DataTypes.TEXT,
       defaultValue: DataTypes.UUIDV4,
       primaryKey: true,
     },
@@ -139,7 +139,7 @@ Category.init(
       field: 'is_active',
     },
     parentId: {
-      type: DataTypes.UUID,
+      type: DataTypes.TEXT,
       allowNull: true,
       field: 'parent_id',
     },
@@ -209,7 +209,7 @@ export class Product extends Model<ProductAttributes, ProductCreationAttributes>
 Product.init(
   {
     id: {
-      type: DataTypes.UUID,
+      type: DataTypes.TEXT,
       defaultValue: DataTypes.UUIDV4,
       primaryKey: true,
     },
@@ -224,7 +224,7 @@ Product.init(
       field: 'slug',
     },
     categoryId: {
-      type: DataTypes.UUID,
+      type: DataTypes.TEXT,
       allowNull: true,
       field: 'category_id',
     },
@@ -266,7 +266,7 @@ Product.init(
       allowNull: true,
     },
     instructionTemplateId: {
-      type: DataTypes.UUID,
+      type: DataTypes.TEXT,
       allowNull: true,
       field: 'instruction_template_id',
     },
@@ -334,7 +334,7 @@ export class InstructionTemplate extends Model<InstructionTemplateAttributes, In
 InstructionTemplate.init(
   {
     id: {
-      type: DataTypes.UUID,
+      type: DataTypes.TEXT,
       defaultValue: DataTypes.UUIDV4,
       primaryKey: true,
     },
@@ -343,7 +343,7 @@ InstructionTemplate.init(
       allowNull: false,
     },
     productId: {
-      type: DataTypes.UUID,
+      type: DataTypes.TEXT,
       allowNull: true,
       field: 'product_id',
     },
@@ -423,12 +423,12 @@ export class ProductFile extends Model<ProductFileAttributes, ProductFileCreatio
 ProductFile.init(
   {
     id: {
-      type: DataTypes.UUID,
+      type: DataTypes.TEXT,
       defaultValue: DataTypes.UUIDV4,
       primaryKey: true,
     },
     productId: {
-      type: DataTypes.UUID,
+      type: DataTypes.TEXT,
       allowNull: false,
       field: 'product_id',
     },
@@ -535,7 +535,7 @@ export class ActivationCode extends Model<ActivationCodeAttributes, ActivationCo
 ActivationCode.init(
   {
     id: {
-      type: DataTypes.UUID,
+      type: DataTypes.TEXT,
       defaultValue: DataTypes.UUIDV4,
       primaryKey: true,
     },
@@ -545,7 +545,7 @@ ActivationCode.init(
       unique: true,
     },
     productId: {
-      type: DataTypes.UUID,
+      type: DataTypes.TEXT,
       allowNull: true,
       field: 'product_id',
     },
@@ -613,7 +613,7 @@ ActivationCode.init(
       field: 'cdk_message',
     },
     createdBy: {
-      type: DataTypes.UUID,
+      type: DataTypes.TEXT,
       allowNull: true,
       field: 'created_by',
     },
@@ -665,12 +665,12 @@ export class Activation extends Model<ActivationAttributes, ActivationCreationAt
 Activation.init(
   {
     id: {
-      type: DataTypes.UUID,
+      type: DataTypes.TEXT,
       defaultValue: DataTypes.UUIDV4,
       primaryKey: true,
     },
     codeId: {
-      type: DataTypes.UUID,
+      type: DataTypes.TEXT,
       allowNull: false,
       field: 'code_id',
     },
@@ -736,12 +736,12 @@ export class AdminLog extends Model<AdminLogAttributes, AdminLogCreationAttribut
 AdminLog.init(
   {
     id: {
-      type: DataTypes.UUID,
+      type: DataTypes.TEXT,
       defaultValue: DataTypes.UUIDV4,
       primaryKey: true,
     },
     userId: {
-      type: DataTypes.UUID,
+      type: DataTypes.TEXT,
       allowNull: true,
       field: 'user_id',
     },
@@ -755,7 +755,7 @@ AdminLog.init(
       field: 'entity_type',
     },
     entityId: {
-      type: DataTypes.UUID,
+      type: DataTypes.TEXT,
       allowNull: true,
       field: 'entity_id',
     },
@@ -816,7 +816,7 @@ export class Language extends Model<LanguageAttributes, LanguageCreationAttribut
 Language.init(
   {
     id: {
-      type: DataTypes.UUID,
+      type: DataTypes.TEXT,
       defaultValue: DataTypes.UUIDV4,
       primaryKey: true,
     },
@@ -880,12 +880,12 @@ export class Translation extends Model<TranslationAttributes, TranslationCreatio
 Translation.init(
   {
     id: {
-      type: DataTypes.UUID,
+      type: DataTypes.TEXT,
       defaultValue: DataTypes.UUIDV4,
       primaryKey: true,
     },
     languageId: {
-      type: DataTypes.UUID,
+      type: DataTypes.TEXT,
       allowNull: false,
       field: 'language_id',
     },
@@ -895,7 +895,7 @@ Translation.init(
       field: 'entity_type',
     },
     entityId: {
-      type: DataTypes.UUID,
+      type: DataTypes.TEXT,
       allowNull: false,
       field: 'entity_id',
     },
@@ -952,7 +952,7 @@ export class Setting extends Model<SettingAttributes, SettingCreationAttributes>
 Setting.init(
   {
     id: {
-      type: DataTypes.UUID,
+      type: DataTypes.TEXT,
       defaultValue: DataTypes.UUIDV4,
       primaryKey: true,
     },
@@ -1012,7 +1012,7 @@ export class CodeAttempt extends Model<CodeAttemptAttributes, CodeAttemptCreatio
 CodeAttempt.init(
   {
     id: {
-      type: DataTypes.UUID,
+      type: DataTypes.TEXT,
       defaultValue: DataTypes.UUIDV4,
       primaryKey: true,
     },
