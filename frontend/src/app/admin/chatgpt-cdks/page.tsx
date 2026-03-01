@@ -279,14 +279,12 @@ export default function ChatGPTCDKsPage() {
                         <span className={clsx('px-2 py-1 rounded-full text-xs', getStatusColor(cdk.status))}>
                           {getStatusLabel(cdk.status)}
                         </span>
-                        {(cdk.status === 'available' || cdk.status === 'failed') && (
-                          <button
-                            onClick={() => deleteMutation.mutate(cdk.id)}
-                            className="p-1.5 text-red-400 hover:bg-red-900/20 rounded-lg"
-                          >
-                            <Trash2 className="w-4 h-4" />
-                          </button>
-                        )}
+                        <button
+                          onClick={() => deleteMutation.mutate(cdk.id)}
+                          className="p-1.5 text-red-400 hover:bg-red-900/20 rounded-lg"
+                        >
+                          <Trash2 className="w-4 h-4" />
+                        </button>
                       </div>
                     </div>
                   ))}
