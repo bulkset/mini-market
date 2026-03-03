@@ -151,13 +151,6 @@ export default function Home() {
                 />
               </div>
 
-              {error && (
-                <div className="flex items-center gap-3 text-red-400 bg-red-900/20 p-4 rounded-xl">
-                  <AlertCircle className="w-5 h-5 flex-shrink-0" />
-                  <span className="text-sm">{error}</span>
-                </div>
-              )}
-
               <button
                 type="submit"
                 disabled={mutation.isPending || !code.trim()}
@@ -374,12 +367,6 @@ export default function Home() {
                     <div className="p-4 bg-indigo-900/20 border border-indigo-500/30 rounded-xl">
                       <h4 className="text-indigo-400 font-medium mb-2">🔑 Введите ваш ChatGPT токен</h4>
                       <p className="text-sm text-gray-400 mb-3">Для активации подписки введите токен вашего аккаунта ChatGPT</p>
-                      {error && (
-                        <div className="flex items-center gap-2 text-red-400 bg-red-900/20 p-3 rounded-xl mb-3 text-sm">
-                          <AlertCircle className="w-4 h-4 flex-shrink-0" />
-                          <span>{error}</span>
-                        </div>
-                      )}
                       <textarea
                         value={token}
                         onChange={(e) => setToken(e.target.value)}
@@ -410,7 +397,7 @@ export default function Home() {
                     <p className="text-sm text-gray-400 mt-2">Пожалуйста, подождите. Это может занять несколько секунд.</p>
                   </div>
                 ) : taskId && rechargeStatus ? (
-                  /* Результат активации */
+                  /* Результат активации - показываем успех, скрываем ошибки */
                   (rechargeStatus.pending || (!rechargeStatus.success && Date.now() - rechargeStartTs < 15000)) ? (
                     <div className="p-4 bg-indigo-900/20 border border-indigo-500/30 rounded-xl">
                       <div className="flex items-center gap-3 text-indigo-400">
@@ -419,25 +406,21 @@ export default function Home() {
                       </div>
                       <p className="text-sm text-gray-400 mt-2">Пожалуйста, подождите. Это может занять несколько секунд.</p>
                     </div>
+                  ) : rechargeStatus.success ? (
+                    <div className="p-4 rounded-xl border bg-green-900/20 border-green-500/30">
+                      <div className="flex items-center gap-3 text-green-400 mb-2">
+                        <CheckCircle className="w-5 h-5" />
+                        <span className="font-medium">Подписка успешно активирована! 🎉</span>
+                      </div>
+                      <p className="text-sm text-gray-400">Ваша подписка ChatGPT активирована. Пожалуйста, оставьте отзыв — ваше мнение помогает нам становиться лучше ❤️</p>
+                    </div>
                   ) : (
-                    <div className={`p-4 rounded-xl border ${rechargeStatus.success ? 'bg-green-900/20 border-green-500/30' : 'bg-red-900/20 border-red-500/30'}`}>
-                      {rechargeStatus.success ? (
-                      <div>
-                        <div className="flex items-center gap-3 text-green-400 mb-2">
-                          <CheckCircle className="w-5 h-5" />
-                          <span className="font-medium">Подписка успешно активирована! 🎉</span>
-                        </div>
-                        <p className="text-sm text-gray-400">Ваша подписка ChatGPT активирована. Пожалуйста, оставьте отзыв — ваше мнение помогает нам становиться лучше ❤️</p>
+                    <div className="p-4 bg-indigo-900/20 border border-indigo-500/30 rounded-xl">
+                      <div className="flex items-center gap-3 text-indigo-400">
+                        <Loader2 className="w-5 h-5 animate-spin" />
+                        <span className="font-medium">Активация в процессе...</span>
                       </div>
-                    ) : (
-                      <div>
-                        <div className="flex items-center gap-3 text-red-400 mb-2">
-                          <AlertCircle className="w-5 h-5" />
-                          <span className="font-medium">Ошибка активации</span>
-                        </div>
-                        <p className="text-sm text-gray-400">{rechargeStatus.message || 'Не удалось активировать подписку. Обратитесь в поддержку.'}</p>
-                      </div>
-                    )}
+                      <p className="text-sm text-gray-400 mt-2">Пожалуйста, подождите. Это может занять несколько секунд.</p>
                     </div>
                   )
                 ) : !product?.requiresToken ? (
