@@ -490,7 +490,8 @@ export async function generateCodes(
   usageLimit: number = 1,
   expiresInDays: number | null = null,
   codeType: string | null = null,
-  createdBy: string | null = null
+  createdBy: string | null = null,
+  gptType: string | null = null
 ): Promise<string[]> {
   const settings = await getSettings();
   const defaultExpiration = settings.default_expiration_days ? parseInt(settings.default_expiration_days) : config.security.defaultCodesExpirationDays;
@@ -501,7 +502,7 @@ export async function generateCodes(
   const chars = 'ABCDEFGHJKLMNPQRSTUVWXYZ23456789';
   const normalizedPrefix = (prefix || '').trim().toUpperCase();
   const randomLength = Math.max(length, 0);
-  console.info('Generate codes', { productId, count, prefix: normalizedPrefix, length: normalizedPrefix.length + randomLength, randomLength, codeType });
+  console.info('Generate codes', { productId, count, prefix: normalizedPrefix, length: normalizedPrefix.length + randomLength, randomLength, codeType, gptType });
   
   for (let i = 0; i < count; i++) {
     let code = normalizedPrefix;
@@ -528,6 +529,7 @@ export async function generateCodes(
       usageCount: 0,
       expiresAt,
       codeType,
+      gptType,
       createdBy: createdBy || null
     });
     
@@ -541,7 +543,7 @@ export async function generateCodes(
  * Импорт кодов из CSV
  */
 export async function importCodesFromCSV(
-  data: Array<{code: string; productId?: string; usageLimit?: number; expiresAt?: string; codeType?: string}>,
+  data: Array<{code: string; productId?: string; usageLimit?: number; expiresAt?: string; codeType?: string; gptType?: string}>,
   createdBy: string | null = null
 ): Promise<{ imported: number; errors: string[] }> {
   const errors: string[] = [];
@@ -569,6 +571,7 @@ export async function importCodesFromCSV(
         usageCount: 0,
         expiresAt: row.expiresAt ? new Date(row.expiresAt) : null,
         codeType: row.codeType || null,
+        gptType: row.gptType || null,
         createdBy: createdBy || null
       });
       
