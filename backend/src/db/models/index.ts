@@ -498,6 +498,7 @@ interface ActivationCodeAttributes {
   userIp: string | null;
   userEmail: string | null;
   codeType: string | null;
+  gptType: string | null;
   metadata: Record<string, unknown> | null;
   cdkCode: string | null;
   cdkStatus: string | null;
@@ -508,7 +509,7 @@ interface ActivationCodeAttributes {
   updatedAt: Date;
 }
 
-interface ActivationCodeCreationAttributes extends Optional<ActivationCodeAttributes, 'id' | 'productId' | 'status' | 'usageLimit' | 'usageCount' | 'activatedAt' | 'expiresAt' | 'userIp' | 'userEmail' | 'codeType' | 'metadata' | 'cdkCode' | 'cdkStatus' | 'cdkTaskId' | 'cdkMessage' | 'createdBy' | 'createdAt' | 'updatedAt'> {}
+interface ActivationCodeCreationAttributes extends Optional<ActivationCodeAttributes, 'id' | 'productId' | 'status' | 'usageLimit' | 'usageCount' | 'activatedAt' | 'expiresAt' | 'userIp' | 'userEmail' | 'codeType' | 'gptType' | 'metadata' | 'cdkCode' | 'cdkStatus' | 'cdkTaskId' | 'cdkMessage' | 'createdBy' | 'createdAt' | 'updatedAt'> {}
 
 export class ActivationCode extends Model<ActivationCodeAttributes, ActivationCodeCreationAttributes> implements ActivationCodeAttributes {
   declare id: string;
@@ -522,6 +523,7 @@ export class ActivationCode extends Model<ActivationCodeAttributes, ActivationCo
   declare userIp: string | null;
   declare userEmail: string | null;
   declare codeType: string | null;
+  declare gptType: string | null;
   declare metadata: Record<string, unknown> | null;
   declare cdkCode: string | null;
   declare cdkStatus: string | null;
@@ -587,6 +589,11 @@ ActivationCode.init(
       type: DataTypes.STRING(100),
       allowNull: true,
       field: 'code_type',
+    },
+    gptType: {
+      type: DataTypes.STRING(50),
+      allowNull: true,
+      field: 'gpt_type',
     },
     metadata: {
       type: DataTypes.JSONB,

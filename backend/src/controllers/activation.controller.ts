@@ -109,6 +109,14 @@ export async function rechargeWithTokenHandler(req: Request, res: Response) {
           error: 'Код не найден'
         });
       }
+      
+      // Проверка соответствия типа подписки
+      if (activationCode.gptType && activationCode.gptType !== gptType) {
+        return res.status(400).json({
+          success: false,
+          error: `Неверный тип подписки. Ожидается: ${activationCode.gptType}`
+        });
+      }
     }
 
     console.info('Recharge attempt', {

@@ -520,7 +520,8 @@ router.post('/codes/generate', async (req: AuthRequest, res: Response) => {
       Number(usageLimit) || 1,
       expiresInDays ? Number(expiresInDays) : null,
       codeType || null,
-      req.user?.id || null
+      req.user?.id || null,
+      productGptType
     );
 
     await AdminLog.create({
@@ -649,6 +650,7 @@ router.post('/codes/import-paired', async (req: AuthRequest, res: Response) => {
         usageCount: 0,
         expiresAt: null,
         codeType: null,
+        gptType: (product as any).gptType || null,
         createdBy: req.user?.id || null,
         metadata: {
           partnerProductId,
