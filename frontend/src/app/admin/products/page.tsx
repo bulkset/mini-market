@@ -7,7 +7,7 @@ import { useQuery, useMutation, useQueryClient } from '@tanstack/react-query';
 import { 
   LayoutDashboard, Package, Tag, Key, BarChart3, Settings, LogOut, Menu, X, Loader2, Plus, Search, Edit, Trash2, FileText, Image, History
 } from 'lucide-react';
-import { getProducts, getCategories, getInstructions, createProduct, updateProduct, deleteProduct, generateCodes, importPairedCodes, importSingleCodes, getStats, logout } from '@/lib/api';
+import { getProducts, getCategories, getInstructions, createProduct, updateProduct, deleteProduct, generateCodes, importPairedCodes, importSingleCodes, getStats, logout, getCodes } from '@/lib/api';
 import clsx from 'clsx';
 
 const navigation = [
@@ -29,6 +29,8 @@ export default function ProductsPage() {
   const [search, setSearch] = useState('');
   const [showModal, setShowModal] = useState(false);
   const [editingProduct, setEditingProduct] = useState<any>(null);
+  const [editingProductCodes, setEditingProductCodes] = useState<any[]>([]);
+  const [loadingCodes, setLoadingCodes] = useState(false);
   const [bulkPartnerProductId, setBulkPartnerProductId] = useState('');
   const [bulkPrimaryCodes, setBulkPrimaryCodes] = useState('');
   const [bulkPartnerCodes, setBulkPartnerCodes] = useState('');
@@ -81,8 +83,17 @@ export default function ProductsPage() {
 
   const handleLogout = async () => { await logout(); router.push('/admin/login'); };
 
-  const handleEditProduct = (product: any) => {
+  const handleEditProduct = async (product: any) => {
     setEditingProduct(product);
+    setLoadingCodes(true);
+    try {
+      const codesData = await getCodes({ productId: product.id, limit: 1000 });
+      setEditingProductCodes(codesData.data?.codes || []);
+    } catch (error) {
+      console.error('Error loading codes:', error);
+      setEditingProductCodes([]);
+    }
+    setLoadingCodes(false);
     setShowModal(true);
   };
 
@@ -340,6 +351,43 @@ export default function ProductsPage() {
               <div><label className="block text-sm font-medium mb-2 text-gray-300">Товар 1</label><textarea name="description" rows={3} defaultValue={editingProduct?.description || ''} className="w-full px-4 py-3 bg-gradient-to-r from-purple-500/10 to-pink-500/10 border border-purple-500/30 rounded-xl text-white" /></div>
               <div className="partner-field" style={{ display: editingProduct?.type === 'paired' ? 'block' : 'none' }}><label className="block text-sm font-medium mb-2 text-gray-300">Товар 2</label><textarea name="description2" rows={3} defaultValue={editingProduct?.description2 || ''} placeholder="Второй товар" className="w-full px-4 py-3 bg-gradient-to-r from-purple-500/10 to-pink-500/10 border border-purple-500/30 rounded-xl text-white" /></div>
               <div><label className="block text-sm font-medium mb-2 text-gray-300">Статус</label><select name="status" defaultValue={editingProduct?.status || 'active'} className="w-full px-4 py-3 bg-gray-800 border border-gray-700 rounded-xl text-white"><option value="active">Активный</option><option value="hidden">Скрытый</option></select></div>
+              
+              {editingProduct && (
+                <div className="border-t border-gray-700 pt-4 mt-4">
+                  <h3 className="text-sm font-medium text-gray-300 mb-3">Коды товара ({editingProductCodes.length})</h3>
+                  {loadingCodes ? (
+                    <div className="flex items-center gap-2 text-gray-400">
+                      <Loader2 className="w-4 h-4 animate-spin" />
+                      Загрузка кодов...
+                    </div>
+                  ) : editingProductCodes.length > 0 ? (
+                    <div className="max-h-48 overflow-y-auto bg-gray-800 rounded-lg p-3">
+                      <div className="grid grid-cols-1 gap-1">
+                        {editingProductCodes.slice(0, 50).map((code: any) => (
+                          <div key={code.id} className="flex items-center justify-between text-xs font-mono">
+                            <span className="text-white truncate">{code.code}</span>
+                            <span className={clsx(
+                              'px-2 py-0.5 rounded text-xs',
+                              code.status === 'active' ? 'bg-green-900/50 text-green-300' : 
+                              code.status === 'used' ? 'bg-yellow-900/50 text-yellow-300' : 
+                              code.status === 'blocked' ? 'bg-red-900/50 text-red-300' : 'bg-gray-700 text-gray-400'
+                            )}>
+                              {code.status === 'active' ? 'Свободен' : code.status === 'used' ? 'Использован' : code.status === 'blocked' ? 'Заблокирован' : code.status}
+                            </span>
+                          </div>
+                        ))}
+                        {editingProductCodes.length > 50 && (
+                          <div className="text-xs text-gray-500 mt-2">
+                            ... ещё {editingProductCodes.length - 50} кодов
+                          </div>
+                        )}
+                      </div>
+                    </div>
+                  ) : (
+                    <div className="text-sm text-gray-500">Коды не найдены</div>
+                  )}
+                </div>
+              )}
               
               {!editingProduct && (
                 <div data-codes-section className="border-t border-gray-700 pt-4 mt-4">

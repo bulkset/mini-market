@@ -900,12 +900,12 @@ router.delete('/codes/:id', async (req: AuthRequest, res: Response) => {
     
     const productStats = await ActivationCode.findAll({
       attributes: [
-        [sequelize.col('ActivationCode.product_id'), 'productId'],
+        [sequelize.col('product.id'), 'productId'],
         [sequelize.fn('COUNT', sequelize.col('ActivationCode.id')), 'total'],
         [sequelize.fn('SUM', sequelize.literal('CASE WHEN "ActivationCode".status = \'used\' OR "ActivationCode".usage_count > 0 THEN 1 ELSE 0 END')), 'used']
       ],
-      include: [{ model: Product, as: 'product', attributes: ['id', 'name'] }],
-      group: ['ActivationCode.product_id', 'product.id'],
+      include: [{ model: Product, as: 'product', attributes: [] }],
+      group: ['product.id'],
       raw: false
     });
 
