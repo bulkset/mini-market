@@ -51,6 +51,17 @@ export default function ProductsPage() {
 
   useEffect(() => { setCurrentPath(window.location.pathname); }, []);
 
+  // Синхронизация типа товара с режимом импорта
+  useEffect(() => {
+    if (!editingProduct) {
+      // При создании - по умолчанию digital_file = single
+      return;
+    }
+    if (editingProduct.type === 'paired') {
+      setBulkImportMode('paired');
+    }
+  }, [editingProduct]);
+
   const { data: productsData, isLoading } = useQuery({ queryKey: ['products', search], queryFn: () => getProducts({ search }) });
   const { data: instructionsData } = useQuery({ queryKey: ['instructions'], queryFn: () => getInstructions() });
   const { data: statsData } = useQuery({ queryKey: ['stats'], queryFn: () => getStats() });
@@ -75,12 +86,12 @@ export default function ProductsPage() {
     setShowModal(true);
   };
 
-  const handleOpenRefill = (product: any) => {
-    setRefillProduct(product);
+  const handleOpenRefill = () => {
+    setRefillProduct(null);
     setRefillPartnerProductId('');
     setRefillPrimaryCodes('');
     setRefillPartnerCodes('');
-    setRefillImportMode('paired');
+    setRefillImportMode('single');
     setRefillError('');
     setRefillResult(null);
     setShowRefillModal(true);
@@ -96,49 +107,21 @@ export default function ProductsPage() {
       return;
     }
 
-    // Одиночный режим - только коды товара 1
-    if (refillImportMode === 'single') {
-      if (!refillPrimaryCodes.trim()) {
-        setRefillError('Введите коды');
-        return;
-      }
-
-      try {
-        const response = await importSingleCodes({
-          productId: String(refillProduct.id),
-          codesText: refillPrimaryCodes
-        });
-        if (response.success) {
-          setRefillResult(response.data);
-          queryClient.invalidateQueries({ queryKey: ['stats'] });
-        } else {
-          setRefillError(response.error || 'Ошибка импорта');
-        }
-      } catch (error: any) {
-        setRefillError(error.response?.data?.error || error.message || 'Ошибка импорта');
-      }
-      return;
-    }
-
-    // Парный режим - товар 1 + товар 2
-    if (!refillPartnerProductId) {
-      setRefillError('Выберите товар 2 для парного импорта');
-      return;
-    }
-    if (!refillPrimaryCodes.trim() || !refillPartnerCodes.trim()) {
-      setRefillError('Нужны оба списка кодов (товар 1 и товар 2)');
+    // Импорт - добавляем коды внутрь выбранного товара
+    if (!refillPrimaryCodes.trim()) {
+      setRefillError('Введите коды');
       return;
     }
 
     try {
-      const response = await importPairedCodes({
+      const response = await importSingleCodes({
         productId: String(refillProduct.id),
-        partnerProductId: refillPartnerProductId,
-        primaryCodesText: refillPrimaryCodes,
-        partnerCodesText: refillPartnerCodes
+        codesText: refillPrimaryCodes
       });
+      
       if (response.success) {
-        setRefillResult(response.data);
+        setRefillResult({ imported: response.data.imported || 0, errors: response.data.errors || [] });
+        queryClient.invalidateQueries({ queryKey: ['products'] });
         queryClient.invalidateQueries({ queryKey: ['stats'] });
       } else {
         setRefillError(response.error || 'Ошибка импорта');
@@ -207,55 +190,54 @@ export default function ProductsPage() {
       const created = await createMutation.mutateAsync(productData);
       const createdProductId = String(created.data.id);
 
-      // Одиночный режим - только коды товара 1
-      if (hasBulkCodes && bulkImportMode === 'single') {
+      // Импорт кодов - каждая строка = отдельный товар
+      // Также поддерживаем разделение по пробелу, если всё в одну строку
+      if (hasBulkCodes) {
         setBulkImportError('');
         setBulkImportResult(null);
 
-        try {
-          const response = await importSingleCodes({
-            productId: createdProductId,
-            codesText: bulkPrimaryCodes
-          });
-          if (response.success) {
-            setBulkImportResult(response.data);
-          } else {
-            setBulkImportError(response.error || 'Ошибка импорта');
-          }
-        } catch (error: any) {
-          setBulkImportError(error.response?.data?.error || error.message || 'Ошибка импорта');
-        }
-      }
-      // Парный режим - товар 1 + товар 2
-      else if (hasBulkCodes && bulkImportMode === 'paired') {
-        setBulkImportError('');
-        setBulkImportResult(null);
-
-        if (!bulkPartnerProductId) {
-          setBulkImportError('Выберите товар 2 для парного импорта');
+        // Разделяем по переносу строки или пробелу
+        const allText = bulkPrimaryCodes.trim();
+        const lines = allText.split(/\n|\s+/).filter(line => line.trim() && line.includes(':'));
+        
+        if (lines.length === 0) {
+          // Нет формата email:password - пробуем как один код
+          setBulkImportError('Неверный формат кодов. Ожидается email:password');
           return;
         }
 
-        if (!bulkPrimaryCodes.trim() || !bulkPartnerCodes.trim()) {
-          setBulkImportError('Нужны оба списка кодов (товар 1 и товар 2)');
-          return;
+        let imported = 0;
+        const errors: string[] = [];
+
+        for (const line of lines) {
+          try {
+            // Создаём товар для каждого кода
+            const emailPart = line.split(':')[0];
+            const productName = emailPart || `Товар ${imported + 1}`;
+            
+            const newProduct = await createMutation.mutateAsync({
+              name: productName,
+              type: 'digital_file',
+              status: 'active',
+              description: formData.get('description') as string || '',
+              shortDescription: formData.get('shortDescription') as string || ''
+            });
+
+            // Импортируем код в созданный товар
+            const response = await importSingleCodes({
+              productId: String(newProduct.data.id),
+              codesText: line.trim()
+            });
+
+            if (response.success) {
+              imported += response.data.imported || 1;
+            }
+          } catch (error: any) {
+            errors.push(`Ошибка для ${line}: ${error.message}`);
+          }
         }
 
-        try {
-          const response = await importPairedCodes({
-            productId: createdProductId,
-            partnerProductId: bulkPartnerProductId,
-            primaryCodesText: bulkPrimaryCodes,
-            partnerCodesText: bulkPartnerCodes
-          });
-          if (response.success) {
-            setBulkImportResult(response.data);
-          } else {
-            setBulkImportError(response.error || 'Ошибка импорта');
-          }
-        } catch (error: any) {
-          setBulkImportError(error.response?.data?.error || error.message || 'Ошибка импорта');
-        }
+        setBulkImportResult({ imported, errors });
       }
     }
   };
@@ -293,7 +275,7 @@ export default function ProductsPage() {
         <main className="p-6 lg:p-8">
           <div className="flex flex-col sm:flex-row sm:items-center sm:justify-between gap-4 mb-8">
             <div><h1 className="text-3xl font-bold text-white">Товары</h1><p className="mt-1 text-gray-400">Управление товарами</p></div>
-            <button onClick={() => { setEditingProduct(null); setShowModal(true); }} className="inline-flex items-center gap-2 px-4 py-2 bg-indigo-600 text-white rounded-xl hover:bg-indigo-700"><Plus className="w-5 h-5" />Добавить товар</button>
+            <button onClick={() => { setEditingProduct(null); setBulkImportMode('single'); setBulkPrimaryCodes(''); setBulkPartnerCodes(''); setShowModal(true); }} className="inline-flex items-center gap-2 px-4 py-2 bg-indigo-600 text-white rounded-xl hover:bg-indigo-700"><Plus className="w-5 h-5" />Добавить товар</button>
           </div>
 
           <div className="relative mb-6">
@@ -320,7 +302,7 @@ export default function ProductsPage() {
                           <td className="px-6 py-4 text-center"><span className={clsx('px-2 py-1 rounded-full text-xs', product.status === 'active' ? 'bg-green-900/50 text-green-300' : 'bg-gray-700 text-gray-400')}>{product.status === 'active' ? 'Активен' : 'Скрыт'}</span></td>
                           <td className="px-6 py-4 text-center">
                             <div className="flex items-center justify-center gap-2">
-                              <button onClick={() => handleOpenRefill(product)} className="px-3 py-1 text-xs bg-purple-600 text-white rounded-lg hover:bg-purple-700">Пополнить</button>
+                              <button onClick={handleOpenRefill} className="px-3 py-1 text-xs bg-purple-600 text-white rounded-lg hover:bg-purple-700">Пополнить</button>
                               <button onClick={() => handleEditProduct(product)} className="p-2 text-blue-600 hover:bg-blue-50 rounded-lg"><Edit className="w-4 h-4" /></button>
                               <button onClick={() => deleteMutation.mutate(product.id)} className="p-2 text-red-600 hover:bg-red-50 rounded-lg"><Trash2 className="w-4 h-4" /></button>
                             </div>
@@ -346,36 +328,21 @@ export default function ProductsPage() {
             </div>
             <form onSubmit={handleCreateProduct} className="p-6 space-y-4">
               <div><label className="block text-sm font-medium mb-2 text-gray-300">Название *</label><input name="name" required defaultValue={editingProduct?.name || ''} className="w-full px-4 py-3 bg-gray-800 border border-gray-700 rounded-xl text-white" /></div>
-              <div><label className="block text-sm font-medium mb-2 text-gray-300">Тип товара</label><select name="type" defaultValue={editingProduct?.type || 'digital_file'} onChange={(e) => { const form = e.target.form; if (form) { const typeSelect = form.querySelector('[name="gptType"]') as HTMLSelectElement; if (typeSelect) typeSelect.style.display = e.target.value === 'chatgpt_token' ? 'block' : 'none'; }}} className="w-full px-4 py-3 bg-gray-800 border border-gray-700 rounded-xl text-white"><option value="digital_file">Обычный товар (файл/код)</option><option value="text_instruction">Текстовая инструкция</option><option value="link">Ссылка</option><option value="chatgpt_token">ChatGPT токен (активация)</option></select></div>
+              <div><label className="block text-sm font-medium mb-2 text-gray-300">Тип товара</label><select name="type" defaultValue={editingProduct?.type || 'digital_file'} onChange={(e) => { const form = e.target.form; if (form) { const typeSelect = form.querySelector('[name="gptType"]') as HTMLSelectElement; if (typeSelect) typeSelect.style.display = e.target.value === 'chatgpt_token' ? 'block' : 'none'; const codesSection = form.querySelector('[data-codes-section]') as HTMLDivElement; if (codesSection) codesSection.style.display = (e.target.value === 'digital_file' || e.target.value === 'paired') ? 'block' : 'none'; const partnerFields = form.querySelectorAll('.partner-field') as NodeListOf<HTMLElement>; partnerFields.forEach(f => f.style.display = e.target.value === 'paired' ? 'block' : 'none'); }}} className="w-full px-4 py-3 bg-gray-800 border border-gray-700 rounded-xl text-white"><option value="digital_file">Одиночный товар (обычный)</option><option value="paired">Парный товар (товар 1 + товар 2)</option><option value="text_instruction">Текстовая инструкция</option><option value="link">Ссылка</option><option value="chatgpt_token">ChatGPT токен (активация)</option></select></div>
               <div><label className="block text-sm font-medium mb-2 text-gray-300">Тип ChatGPT</label><select name="gptType" defaultValue={editingProduct?.gptType || ''} style={{ display: editingProduct?.type === 'chatgpt_token' ? 'block' : 'none' }} className="w-full px-4 py-3 bg-gray-800 border border-gray-700 rounded-xl text-white"><option value="">Выберите тип...</option><option value="plus_1m">ChatGPT Plus 1 месяц</option><option value="plus_12m">ChatGPT Plus 12 месяцев</option><option value="pro_1m">ChatGPT Pro 1 месяц</option><option value="go_12m">ChatGPT GO 12 месяцев</option></select></div>
               <div><label className="block text-sm font-medium mb-2 text-gray-300">Инструкция</label><select name="instructionTemplateId" defaultValue={editingProduct?.instructionTemplateId || ''} className="w-full px-4 py-3 bg-gray-800 border border-gray-700 rounded-xl text-white"><option value="">Без инструкции</option>{instructionsData?.data?.instructions?.map((inst: any) => (<option key={inst.id} value={inst.id}>{inst.name}</option>))}</select></div>
               <div><label className="block text-sm font-medium mb-2 text-gray-300">Краткое описание</label><input name="shortDescription" defaultValue={editingProduct?.shortDescription || ''} className="w-full px-4 py-3 bg-gray-800 border border-gray-700 rounded-xl text-white" /></div>
               <div className="grid grid-cols-2 gap-4">
                 <div><label className="block text-sm font-medium mb-2 text-gray-300">Название товара 1</label><input name="productTitle1" defaultValue={editingProduct?.productTitle1 || ''} placeholder="Товар 1" className="w-full px-4 py-3 bg-gray-800 border border-gray-700 rounded-xl text-white" /></div>
-                <div><label className="block text-sm font-medium mb-2 text-gray-300">Название товара 2</label><input name="productTitle2" defaultValue={editingProduct?.productTitle2 || ''} placeholder="Товар 2" className="w-full px-4 py-3 bg-gray-800 border border-gray-700 rounded-xl text-white" /></div>
+                <div className="partner-field" style={{ display: editingProduct?.type === 'paired' ? 'block' : 'none' }}><label className="block text-sm font-medium mb-2 text-gray-300">Название товара 2</label><input name="productTitle2" defaultValue={editingProduct?.productTitle2 || ''} placeholder="Товар 2" className="w-full px-4 py-3 bg-gray-800 border border-gray-700 rounded-xl text-white" /></div>
               </div>
               <div><label className="block text-sm font-medium mb-2 text-gray-300">Изображение (URL)</label><input name="imageUrl" defaultValue={editingProduct?.imageUrl || ''} placeholder="https://example.com/image.jpg" className="w-full px-4 py-3 bg-gray-800 border border-gray-700 rounded-xl text-white" /></div>
               <div><label className="block text-sm font-medium mb-2 text-gray-300">Товар 1</label><textarea name="description" rows={3} defaultValue={editingProduct?.description || ''} className="w-full px-4 py-3 bg-gradient-to-r from-purple-500/10 to-pink-500/10 border border-purple-500/30 rounded-xl text-white" /></div>
-              <div><label className="block text-sm font-medium mb-2 text-gray-300">Товар 2</label><textarea name="description2" rows={3} defaultValue={editingProduct?.description2 || ''} placeholder="Второй товар" className="w-full px-4 py-3 bg-gradient-to-r from-purple-500/10 to-pink-500/10 border border-purple-500/30 rounded-xl text-white" /></div>
+              <div className="partner-field" style={{ display: editingProduct?.type === 'paired' ? 'block' : 'none' }}><label className="block text-sm font-medium mb-2 text-gray-300">Товар 2</label><textarea name="description2" rows={3} defaultValue={editingProduct?.description2 || ''} placeholder="Второй товар" className="w-full px-4 py-3 bg-gradient-to-r from-purple-500/10 to-pink-500/10 border border-purple-500/30 rounded-xl text-white" /></div>
               <div><label className="block text-sm font-medium mb-2 text-gray-300">Статус</label><select name="status" defaultValue={editingProduct?.status || 'active'} className="w-full px-4 py-3 bg-gray-800 border border-gray-700 rounded-xl text-white"><option value="active">Активный</option><option value="hidden">Скрытый</option></select></div>
               
               {!editingProduct && (
-              <div className="border-t border-gray-700 pt-4 mt-4">
-                <div className="flex items-center gap-2 mb-4">
-                  <input type="checkbox" id="generateCodes" name="generateCodes" className="w-4 h-4 rounded bg-gray-800 border-gray-600 text-indigo-600" />
-                  <label htmlFor="generateCodes" className="text-sm text-gray-300">Сгенерировать коды автоматически</label>
-                </div>
-                  <div className="grid grid-cols-2 gap-4 pl-6">
-                    <div><label className="block text-xs text-gray-500 mb-1">Количество кодов</label><input name="codesCount" type="number" defaultValue="10" min="1" className="w-full px-3 py-2 bg-gray-800 border border-gray-700 rounded-xl text-white text-sm" /></div>
-                    <div><label className="block text-xs text-gray-500 mb-1">Префикс</label><input name="codesPrefix" placeholder="Напр. PROD-" className="w-full px-3 py-2 bg-gray-800 border border-gray-700 rounded-xl text-white text-sm" /></div>
-                    <div><label className="block text-xs text-gray-500 mb-1">Длина кода</label><input name="codesLength" type="number" defaultValue="12" min="4" max="32" className="w-full px-3 py-2 bg-gray-800 border border-gray-700 rounded-xl text-white text-sm" /></div>
-                    <div><label className="block text-xs text-gray-500 mb-1">Лимит использования</label><input name="codesLimit" type="number" defaultValue="1" min="1" className="w-full px-3 py-2 bg-gray-800 border border-gray-700 rounded-xl text-white text-sm" /></div>
-                  </div>
-                </div>
-              )}
-
-              {!editingProduct && (
-                <div className="border-t border-gray-700 pt-4 mt-4">
+                <div data-codes-section className="border-t border-gray-700 pt-4 mt-4">
                   <div className="flex items-center gap-4 mb-4">
                     <label className="text-sm font-medium text-gray-300">Режим импорта:</label>
                     <label className="flex items-center gap-2 cursor-pointer">
@@ -468,9 +435,24 @@ shloime_rewers369@mail.com:vD6RroOv8"
                   )}
                   {bulkImportResult && (
                     <div className="mt-3 p-3 bg-green-900/20 border border-green-500/30 rounded-xl text-green-400 text-sm">
-                      Загружено пар: {bulkImportResult.imported}
+                      Загружено товаров: {bulkImportResult.imported}
                     </div>
                   )}
+                </div>
+              )}
+
+              {!editingProduct && (
+              <div className="border-t border-gray-700 pt-4 mt-4">
+                <div className="flex items-center gap-2 mb-4">
+                  <input type="checkbox" id="generateCodes" name="generateCodes" className="w-4 h-4 rounded bg-gray-800 border-gray-600 text-indigo-600" />
+                  <label htmlFor="generateCodes" className="text-sm text-gray-300">Сгенерировать коды автоматически</label>
+                </div>
+                  <div className="grid grid-cols-2 gap-4 pl-6">
+                    <div><label className="block text-xs text-gray-500 mb-1">Количество кодов</label><input name="codesCount" type="number" defaultValue="10" min="1" className="w-full px-3 py-2 bg-gray-800 border border-gray-700 rounded-xl text-white text-sm" /></div>
+                    <div><label className="block text-xs text-gray-500 mb-1">Префикс</label><input name="codesPrefix" placeholder="Напр. PROD-" className="w-full px-3 py-2 bg-gray-800 border border-gray-700 rounded-xl text-white text-sm" /></div>
+                    <div><label className="block text-xs text-gray-500 mb-1">Длина кода</label><input name="codesLength" type="number" defaultValue="12" min="4" max="32" className="w-full px-3 py-2 bg-gray-800 border border-gray-700 rounded-xl text-white text-sm" /></div>
+                    <div><label className="block text-xs text-gray-500 mb-1">Лимит использования</label><input name="codesLimit" type="number" defaultValue="1" min="1" className="w-full px-3 py-2 bg-gray-800 border border-gray-700 rounded-xl text-white text-sm" /></div>
+                  </div>
                 </div>
               )}
 
@@ -487,10 +469,28 @@ shloime_rewers369@mail.com:vD6RroOv8"
         <div className="fixed inset-0 z-50 flex items-center justify-center p-4 bg-black/70 backdrop-blur-sm">
           <div className="bg-gray-900 rounded-2xl w-full max-w-3xl border border-gray-700 shadow-2xl">
             <div className="flex items-center justify-between p-6 border-b border-gray-700">
-              <h2 className="text-xl font-semibold text-white">Пополнить товар: {refillProduct?.name}</h2>
+              <h2 className="text-xl font-semibold text-white">Пополнить товар</h2>
               <button onClick={() => { setShowRefillModal(false); setRefillError(''); setRefillResult(null); }} className="p-2 hover:bg-gray-800 rounded-lg text-gray-400 hover:text-white"><X className="w-5 h-5" /></button>
             </div>
             <form onSubmit={handleRefillSubmit} className="p-6 space-y-4">
+              {/* Выбор товара для пополнения */}
+              <div>
+                <label className="block text-sm font-medium mb-2 text-gray-300">Выберите товар для пополнения *</label>
+                <select 
+                  value={refillProduct?.id || ''} 
+                  onChange={(e) => {
+                    const selected = productsData?.data?.products?.find((p: any) => p.id === e.target.value);
+                    setRefillProduct(selected || null);
+                  }}
+                  className="w-full px-4 py-3 bg-gray-800 border border-gray-700 rounded-xl text-white"
+                >
+                  <option value="">Выберите товар...</option>
+                  {productsData?.data?.products?.map((p: any) => (
+                    <option key={p.id} value={p.id}>{p.name}</option>
+                  ))}
+                </select>
+              </div>
+
               {/* Режим импорта */}
               <div className="flex items-center gap-4 mb-4">
                 <label className="text-sm font-medium text-gray-300">Режим импорта:</label>
@@ -583,7 +583,7 @@ shloime_rewers369@mail.com:vD6RroOv8"
 
               {refillResult && (
                 <div className="p-4 rounded-xl bg-green-900/20 border border-green-500/30">
-                  <div className="text-green-400 font-medium">Загружено пар: {refillResult.imported}</div>
+                  <div className="text-green-400 font-medium">Загружено товаров: {refillResult.imported}</div>
                   {refillResult.errors?.length > 0 && (
                     <ul className="mt-2 text-xs text-gray-400 space-y-1 max-h-24 overflow-y-auto">
                       {refillResult.errors.map((e, i) => <li key={i}>{e}</li>)}
