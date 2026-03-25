@@ -7,7 +7,7 @@ import { useQuery, useMutation, useQueryClient } from '@tanstack/react-query';
 import { 
   LayoutDashboard, Package, Tag, Key, BarChart3, Settings, LogOut, Menu, X, Loader2, Plus, Search, Edit, Trash2, FileText, Image, History
 } from 'lucide-react';
-import { getProducts, getCategories, getInstructions, createProduct, updateProduct, deleteProduct, generateCodes, importPairedCodes, getStats, logout } from '@/lib/api';
+import { getProducts, getCategories, getInstructions, createProduct, updateProduct, deleteProduct, generateCodes, importPairedCodes, importSingleCodes, getStats, logout } from '@/lib/api';
 import clsx from 'clsx';
 
 const navigation = [
@@ -32,6 +32,7 @@ export default function ProductsPage() {
   const [bulkPartnerProductId, setBulkPartnerProductId] = useState('');
   const [bulkPrimaryCodes, setBulkPrimaryCodes] = useState('');
   const [bulkPartnerCodes, setBulkPartnerCodes] = useState('');
+  const [bulkImportMode, setBulkImportMode] = useState<'single' | 'paired'>('single');
   const [bulkImportError, setBulkImportError] = useState('');
   const [bulkImportResult, setBulkImportResult] = useState<{ imported: number; errors: string[] } | null>(null);
   const [showRefillModal, setShowRefillModal] = useState(false);
@@ -39,6 +40,7 @@ export default function ProductsPage() {
   const [refillPartnerProductId, setRefillPartnerProductId] = useState('');
   const [refillPrimaryCodes, setRefillPrimaryCodes] = useState('');
   const [refillPartnerCodes, setRefillPartnerCodes] = useState('');
+  const [refillImportMode, setRefillImportMode] = useState<'single' | 'paired'>('single');
   const [refillError, setRefillError] = useState('');
   const [refillResult, setRefillResult] = useState<{ imported: number; errors: string[] } | null>(null);
 
@@ -78,6 +80,7 @@ export default function ProductsPage() {
     setRefillPartnerProductId('');
     setRefillPrimaryCodes('');
     setRefillPartnerCodes('');
+    setRefillImportMode('paired');
     setRefillError('');
     setRefillResult(null);
     setShowRefillModal(true);
@@ -92,6 +95,32 @@ export default function ProductsPage() {
       setRefillError('Не выбран товар');
       return;
     }
+
+    // Одиночный режим - только коды товара 1
+    if (refillImportMode === 'single') {
+      if (!refillPrimaryCodes.trim()) {
+        setRefillError('Введите коды');
+        return;
+      }
+
+      try {
+        const response = await importSingleCodes({
+          productId: String(refillProduct.id),
+          codesText: refillPrimaryCodes
+        });
+        if (response.success) {
+          setRefillResult(response.data);
+          queryClient.invalidateQueries({ queryKey: ['stats'] });
+        } else {
+          setRefillError(response.error || 'Ошибка импорта');
+        }
+      } catch (error: any) {
+        setRefillError(error.response?.data?.error || error.message || 'Ошибка импорта');
+      }
+      return;
+    }
+
+    // Парный режим - товар 1 + товар 2
     if (!refillPartnerProductId) {
       setRefillError('Выберите товар 2 для парного импорта');
       return;
@@ -147,7 +176,7 @@ export default function ProductsPage() {
       status: (formData.get('status') as string) || 'active',
     };
     
-    const hasBulkPairs = bulkPrimaryCodes.trim().length > 0 || bulkPartnerCodes.trim().length > 0;
+    const hasBulkCodes = bulkPrimaryCodes.trim().length > 0;
 
     if (editingProduct?.id) {
       setBulkImportError('');
@@ -178,7 +207,27 @@ export default function ProductsPage() {
       const created = await createMutation.mutateAsync(productData);
       const createdProductId = String(created.data.id);
 
-      if (hasBulkPairs) {
+      // Одиночный режим - только коды товара 1
+      if (hasBulkCodes && bulkImportMode === 'single') {
+        setBulkImportError('');
+        setBulkImportResult(null);
+
+        try {
+          const response = await importSingleCodes({
+            productId: createdProductId,
+            codesText: bulkPrimaryCodes
+          });
+          if (response.success) {
+            setBulkImportResult(response.data);
+          } else {
+            setBulkImportError(response.error || 'Ошибка импорта');
+          }
+        } catch (error: any) {
+          setBulkImportError(error.response?.data?.error || error.message || 'Ошибка импорта');
+        }
+      }
+      // Парный режим - товар 1 + товар 2
+      else if (hasBulkCodes && bulkImportMode === 'paired') {
         setBulkImportError('');
         setBulkImportResult(null);
 
@@ -327,47 +376,91 @@ export default function ProductsPage() {
 
               {!editingProduct && (
                 <div className="border-t border-gray-700 pt-4 mt-4">
-                  <h3 className="text-sm font-medium text-gray-300 mb-3">Парный импорт (товар 1 + товар 2)</h3>
-                  <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
-                    <div>
-                      <label className="block text-xs text-gray-500 mb-1">Товар 2 (партнёр)</label>
-                      <select
-                        value={bulkPartnerProductId}
-                        onChange={(e) => setBulkPartnerProductId(e.target.value)}
-                        className="w-full px-3 py-2 bg-gray-800 border border-gray-700 rounded-xl text-white text-sm"
-                      >
-                        <option value="">Выберите товар</option>
-                        {productsData?.data?.products?.map((p: any) => (
-                          <option key={p.id} value={p.id}>{p.name}</option>
-                        ))}
-                      </select>
-                      <p className="mt-1 text-xs text-gray-500">Товар 1 — это создаваемый товар</p>
-                    </div>
+                  <div className="flex items-center gap-4 mb-4">
+                    <label className="text-sm font-medium text-gray-300">Режим импорта:</label>
+                    <label className="flex items-center gap-2 cursor-pointer">
+                      <input
+                        type="radio"
+                        name="bulkImportMode"
+                        value="single"
+                        checked={bulkImportMode === 'single'}
+                        onChange={() => setBulkImportMode('single')}
+                        className="w-4 h-4 text-indigo-600"
+                      />
+                      <span className="text-sm text-gray-300">Одиночный (обычный товар)</span>
+                    </label>
+                    <label className="flex items-center gap-2 cursor-pointer">
+                      <input
+                        type="radio"
+                        name="bulkImportMode"
+                        value="paired"
+                        checked={bulkImportMode === 'paired'}
+                        onChange={() => setBulkImportMode('paired')}
+                        className="w-4 h-4 text-indigo-600"
+                      />
+                      <span className="text-sm text-gray-300">Парный (товар 1 + товар 2)</span>
+                    </label>
                   </div>
-                  <div className="grid grid-cols-1 md:grid-cols-2 gap-4 mt-3">
+
+                  {bulkImportMode === 'single' ? (
                     <div>
-                      <label className="block text-xs text-gray-500 mb-1">Список кодов товара 1</label>
+                      <label className="block text-xs text-gray-500 mb-1">Коды товара</label>
                       <textarea
                         value={bulkPrimaryCodes}
                         onChange={(e) => setBulkPrimaryCodes(e.target.value)}
                         rows={6}
-                        placeholder="https://one.google.com/offer/XXX\nhttps://one.google.com/offer/YYY"
+                        placeholder="anesti_wahlmeier659@mail.com:pzbLIas8g4
+tyran_karloff355@mail.com:OfPypb9ztv
+shloime_rewers369@mail.com:vD6RroOv8"
                         className="w-full px-3 py-2 bg-gray-800 border border-gray-700 rounded-xl text-white text-xs font-mono resize-none"
                       />
                       <p className="mt-1 text-xs text-gray-500">Строк: {bulkPrimaryCodes.split('\n').filter(Boolean).length}</p>
                     </div>
-                    <div>
-                      <label className="block text-xs text-gray-500 mb-1">Список кодов товара 2</label>
-                      <textarea
-                        value={bulkPartnerCodes}
-                        onChange={(e) => setBulkPartnerCodes(e.target.value)}
-                        rows={6}
-                        placeholder="52362dfd-...-первый\n52362dfd-...-второй"
-                        className="w-full px-3 py-2 bg-gray-800 border border-gray-700 rounded-xl text-white text-xs font-mono resize-none"
-                      />
-                      <p className="mt-1 text-xs text-gray-500">Строк: {bulkPartnerCodes.split('\n').filter(Boolean).length}</p>
-                    </div>
-                  </div>
+                  ) : (
+                    <>
+                      <h3 className="text-sm font-medium text-gray-300 mb-3">Парный импорт (товар 1 + товар 2)</h3>
+                      <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+                        <div>
+                          <label className="block text-xs text-gray-500 mb-1">Товар 2 (партнёр)</label>
+                          <select
+                            value={bulkPartnerProductId}
+                            onChange={(e) => setBulkPartnerProductId(e.target.value)}
+                            className="w-full px-3 py-2 bg-gray-800 border border-gray-700 rounded-xl text-white text-sm"
+                          >
+                            <option value="">Выберите товар</option>
+                            {productsData?.data?.products?.map((p: any) => (
+                              <option key={p.id} value={p.id}>{p.name}</option>
+                            ))}
+                          </select>
+                          <p className="mt-1 text-xs text-gray-500">Товар 1 — это создаваемый товар</p>
+                        </div>
+                      </div>
+                      <div className="grid grid-cols-1 md:grid-cols-2 gap-4 mt-3">
+                        <div>
+                          <label className="block text-xs text-gray-500 mb-1">Список кодов товара 1</label>
+                          <textarea
+                            value={bulkPrimaryCodes}
+                            onChange={(e) => setBulkPrimaryCodes(e.target.value)}
+                            rows={6}
+                            placeholder="https://one.google.com/offer/XXX\nhttps://one.google.com/offer/YYY"
+                            className="w-full px-3 py-2 bg-gray-800 border border-gray-700 rounded-xl text-white text-xs font-mono resize-none"
+                          />
+                          <p className="mt-1 text-xs text-gray-500">Строк: {bulkPrimaryCodes.split('\n').filter(Boolean).length}</p>
+                        </div>
+                        <div>
+                          <label className="block text-xs text-gray-500 mb-1">Список кодов товара 2</label>
+                          <textarea
+                            value={bulkPartnerCodes}
+                            onChange={(e) => setBulkPartnerCodes(e.target.value)}
+                            rows={6}
+                            placeholder="52362dfd-...-первый\n52362dfd-...-второй"
+                            className="w-full px-3 py-2 bg-gray-800 border border-gray-700 rounded-xl text-white text-xs font-mono resize-none"
+                          />
+                          <p className="mt-1 text-xs text-gray-500">Строк: {bulkPartnerCodes.split('\n').filter(Boolean).length}</p>
+                        </div>
+                      </div>
+                    </>
+                  )}
                   {bulkImportError && (
                     <div className="mt-3 p-3 bg-red-900/20 border border-red-500/30 rounded-xl text-red-400 text-sm">
                       {bulkImportError}
@@ -398,44 +491,89 @@ export default function ProductsPage() {
               <button onClick={() => { setShowRefillModal(false); setRefillError(''); setRefillResult(null); }} className="p-2 hover:bg-gray-800 rounded-lg text-gray-400 hover:text-white"><X className="w-5 h-5" /></button>
             </div>
             <form onSubmit={handleRefillSubmit} className="p-6 space-y-4">
-              <div>
-                <label className="block text-sm font-medium mb-2 text-gray-300">Товар 2 (партнёр) *</label>
-                <select
-                  value={refillPartnerProductId}
-                  onChange={(e) => setRefillPartnerProductId(e.target.value)}
-                  className="w-full px-4 py-3 bg-gray-800 border border-gray-700 rounded-xl text-white"
-                  required
-                >
-                  <option value="">Выберите товар</option>
-                  {productsData?.data?.products?.map((p: any) => (
-                    <option key={p.id} value={p.id}>{p.name}</option>
-                  ))}
-                </select>
+              {/* Режим импорта */}
+              <div className="flex items-center gap-4 mb-4">
+                <label className="text-sm font-medium text-gray-300">Режим импорта:</label>
+                <label className="flex items-center gap-2 cursor-pointer">
+                  <input
+                    type="radio"
+                    name="refillImportMode"
+                    value="single"
+                    checked={refillImportMode === 'single'}
+                    onChange={() => setRefillImportMode('single')}
+                    className="w-4 h-4 text-indigo-600"
+                  />
+                  <span className="text-sm text-gray-300">Одиночный (обычный товар)</span>
+                </label>
+                <label className="flex items-center gap-2 cursor-pointer">
+                  <input
+                    type="radio"
+                    name="refillImportMode"
+                    value="paired"
+                    checked={refillImportMode === 'paired'}
+                    onChange={() => setRefillImportMode('paired')}
+                    className="w-4 h-4 text-indigo-600"
+                  />
+                  <span className="text-sm text-gray-300">Парный (товар 1 + товар 2)</span>
+                </label>
               </div>
-              <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+
+              {refillImportMode === 'single' ? (
                 <div>
-                  <label className="block text-sm font-medium mb-2 text-gray-300">Список кодов товара 1</label>
+                  <label className="block text-sm font-medium mb-2 text-gray-300">Коды товара</label>
                   <textarea
                     value={refillPrimaryCodes}
                     onChange={(e) => setRefillPrimaryCodes(e.target.value)}
                     rows={10}
-                    placeholder="https://one.google.com/offer/XXX\nhttps://one.google.com/offer/YYY"
+                    placeholder="anesti_wahlmeier659@mail.com:pzbLIas8g4
+tyran_karloff355@mail.com:OfPypb9ztv
+shloime_rewers369@mail.com:vD6RroOv8"
                     className="w-full px-4 py-3 bg-gray-800 border border-gray-700 rounded-xl text-white font-mono text-sm resize-none"
                   />
                   <p className="text-xs text-gray-500 mt-1">Строк: {refillPrimaryCodes.split('\n').filter(Boolean).length}</p>
                 </div>
-                <div>
-                  <label className="block text-sm font-medium mb-2 text-gray-300">Список кодов товара 2</label>
-                  <textarea
-                    value={refillPartnerCodes}
-                    onChange={(e) => setRefillPartnerCodes(e.target.value)}
-                    rows={10}
-                    placeholder="52362dfd-...-первый\n52362dfd-...-второй"
-                    className="w-full px-4 py-3 bg-gray-800 border border-gray-700 rounded-xl text-white font-mono text-sm resize-none"
-                  />
-                  <p className="text-xs text-gray-500 mt-1">Строк: {refillPartnerCodes.split('\n').filter(Boolean).length}</p>
-                </div>
-              </div>
+              ) : (
+                <>
+                  <div>
+                    <label className="block text-sm font-medium mb-2 text-gray-300">Товар 2 (партнёр) *</label>
+                    <select
+                      value={refillPartnerProductId}
+                      onChange={(e) => setRefillPartnerProductId(e.target.value)}
+                      className="w-full px-4 py-3 bg-gray-800 border border-gray-700 rounded-xl text-white"
+                      required
+                    >
+                      <option value="">Выберите товар</option>
+                      {productsData?.data?.products?.map((p: any) => (
+                        <option key={p.id} value={p.id}>{p.name}</option>
+                      ))}
+                    </select>
+                  </div>
+                  <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+                    <div>
+                      <label className="block text-sm font-medium mb-2 text-gray-300">Список кодов товара 1</label>
+                      <textarea
+                        value={refillPrimaryCodes}
+                        onChange={(e) => setRefillPrimaryCodes(e.target.value)}
+                        rows={10}
+                        placeholder="https://one.google.com/offer/XXX\nhttps://one.google.com/offer/YYY"
+                        className="w-full px-4 py-3 bg-gray-800 border border-gray-700 rounded-xl text-white font-mono text-sm resize-none"
+                      />
+                      <p className="text-xs text-gray-500 mt-1">Строк: {refillPrimaryCodes.split('\n').filter(Boolean).length}</p>
+                    </div>
+                    <div>
+                      <label className="block text-sm font-medium mb-2 text-gray-300">Список кодов товара 2</label>
+                      <textarea
+                        value={refillPartnerCodes}
+                        onChange={(e) => setRefillPartnerCodes(e.target.value)}
+                        rows={10}
+                        placeholder="52362dfd-...-первый\n52362dfd-...-второй"
+                        className="w-full px-4 py-3 bg-gray-800 border border-gray-700 rounded-xl text-white font-mono text-sm resize-none"
+                      />
+                      <p className="text-xs text-gray-500 mt-1">Строк: {refillPartnerCodes.split('\n').filter(Boolean).length}</p>
+                    </div>
+                  </div>
+                </>
+              )}
 
               {refillError && (
                 <div className="p-3 bg-red-900/20 border border-red-500/30 rounded-xl text-red-400 text-sm">

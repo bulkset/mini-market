@@ -9,3 +9,4 @@
 /frontend/.next
 /frontend/.next/cache
 /frontend/.next/cache/webpack/client-development
+/frontend/node_modules
