@@ -215,7 +215,6 @@ export async function activateCode(code: string, userIp: string, userAgent?: str
         {
           model: Product,
           as: 'product',
-          where: { status: 'active' },
           required: false,
           include: [
             {

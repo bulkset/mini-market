@@ -586,6 +586,82 @@ router.post('/codes/import', upload.single('file'), async (req: AuthRequest, res
 });
 
 /**
+ * POST /api/v1/admin/codes/import-single
+ * Импорт одиночных кодов (обычный товар без партнёра)
+ */
+router.post('/codes/import-single', async (req: AuthRequest, res: Response) => {
+  try {
+    const { productId, codesText } = req.body || {};
+
+    if (!productId) {
+      return res.status(400).json({ success: false, error: 'Нужен productId' });
+    }
+
+    if (!codesText) {
+      return res.status(400).json({ success: false, error: 'Нужны коды' });
+    }
+
+    const product = await Product.findByPk(productId);
+    if (!product) {
+      return res.status(404).json({ success: false, error: 'Товар не найден' });
+    }
+
+    const lines = String(codesText)
+      .split('\n')
+      .map((line: string) => line.trim())
+      .filter(Boolean);
+
+    const errors: string[] = [];
+    let imported = 0;
+
+    for (let i = 0; i < lines.length; i += 1) {
+      const code = lines[i].trim();
+
+      if (!code) {
+        errors.push(`Пустой код в строке ${i + 1}`);
+        continue;
+      }
+
+      const exists = await ActivationCode.findOne({ where: { code: code.toUpperCase() } });
+      if (exists) {
+        errors.push(`Код ${code} уже существует (строка ${i + 1})`);
+        continue;
+      }
+
+      await ActivationCode.create({
+        id: uuidv4(),
+        code: code.toUpperCase(),
+        productId,
+        status: 'active',
+        usageLimit: 1,
+        usageCount: 0,
+        expiresAt: null,
+        codeType: null,
+        gptType: (product as any).gptType || null,
+        createdBy: req.user?.id || null,
+        metadata: {}
+      });
+
+      imported += 1;
+    }
+
+    await AdminLog.create({
+      id: uuidv4(),
+      userId: req.user?.id,
+      action: 'import_single_codes',
+      entityType: 'codes',
+      newData: { imported, errors, productId },
+      ipAddress: req.ip || undefined
+    });
+
+    return res.json({ success: true, data: { imported, errors } });
+  } catch (error) {
+    console.error('Import single codes error:', error);
+    return res.status(500).json({ success: false, error: 'Ошибка импорта кодов' });
+  }
+});
+
+/**
  * POST /api/v1/admin/codes/import-paired
  * Импорт парных кодов (товар1 + товар2) из двух текстовых блоков
  */
@@ -826,12 +902,12 @@ router.delete('/codes/:id', async (req: AuthRequest, res: Response) => {
     
     const productStats = await ActivationCode.findAll({
       attributes: [
-        [sequelize.col('ActivationCode.product_id'), 'productId'],
+        [sequelize.col('product.id'), 'productId'],
         [sequelize.fn('COUNT', sequelize.col('ActivationCode.id')), 'total'],
         [sequelize.fn('SUM', sequelize.literal('CASE WHEN "ActivationCode".status = \'used\' OR "ActivationCode".usage_count > 0 THEN 1 ELSE 0 END')), 'used']
       ],
-      include: [{ model: Product, as: 'product', attributes: ['id', 'name'] }],
-      group: ['ActivationCode.product_id', 'product.id'],
+      include: [{ model: Product, as: 'product', attributes: [] }],
+      group: ['product.id'],
       raw: false
     });
 

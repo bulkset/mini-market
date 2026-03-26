@@ -309,6 +309,14 @@ export async function importPairedCodes(data: {
   return response.data;
 }
 
+export async function importSingleCodes(data: {
+  productId: string;
+  codesText: string;
+}) {
+  const response = await api.post('/admin/codes/import-single', data);
+  return response.data;
+}
+
 export async function exportCodes(params?: {
   productId?: string;
   status?: string;
