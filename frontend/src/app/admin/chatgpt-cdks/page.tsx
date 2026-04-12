@@ -24,7 +24,8 @@ const navigation = [
 const GPT_TYPES = [
   { value: 'plus_1m', label: 'ChatGPT Plus 1 месяц' },
   { value: 'plus_12m', label: 'ChatGPT Plus 12 месяцев' },
-  { value: 'pro_1m', label: 'ChatGPT Pro 1 месяц' },
+  { value: 'pro_x20_1m', label: 'ChatGPT Pro X20 1 месяц' },
+  { value: 'pro_x5_1m', label: 'ChatGPT Pro X5 1 месяц' },
   { value: 'go_12m', label: 'ChatGPT GO 12 месяцев' },
 ];
 

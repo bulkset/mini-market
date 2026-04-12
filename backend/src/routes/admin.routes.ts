@@ -1189,7 +1189,7 @@ router.post('/chatgpt-cdks/import', async (req: AuthRequest, res: Response) => {
       return res.status(400).json({ success: false, error: 'gptType и массив cdks обязательны' });
     }
 
-    const validTypes = ['plus_1m', 'plus_12m', 'pro_1m', 'go_12m'];
+    const validTypes = ['plus_1m', 'plus_12m', 'pro_x20_1m', 'pro_x5_1m', 'go_12m'];
     if (!validTypes.includes(gptType)) {
       return res.status(400).json({ success: false, error: 'Неверный тип GPT' });
     }
